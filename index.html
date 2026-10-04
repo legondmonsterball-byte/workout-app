@@ -141,11 +141,11 @@ const SPLITS={
     {k:'전신',desc:'전신',g:['가슴','등','어깨','하체','팔','코어'],list:['스쿼트','벤치프레스','바벨 로우','덤벨 숄더프레스','플랭크']}]}
 };
 const GOALS={
-  cut:{n:'체중 감량',d:'지방은 줄이고 근육은 지켜요',lo:12,hi:15,sets:3,rest:60,prog:1},
-  muscle:{n:'근육량 증가',d:'꾸준히 근육을 키워요',lo:8,hi:12,sets:3,rest:90,prog:1},
-  maintain:{n:'유지',d:'지금 몸을 안정적으로 지켜요',lo:8,hi:12,sets:3,rest:90,prog:0},
-  lean:{n:'린매스업',d:'체지방은 적게, 근육은 천천히 늘려요',lo:8,hi:12,sets:4,rest:90,prog:1},
-  bulk:{n:'벌크업',d:'무게를 빠르게 올려 크게 키워요',lo:6,hi:10,sets:4,rest:120,prog:1}
+  cut:{n:'체중 감량',d:'지방은 줄이고 근육은 지켜요',lo:12,hi:15,sets:3,rest:60,prog:1,kcal:-500,pr:2.0},
+  muscle:{n:'근육량 증가',d:'꾸준히 근육을 키워요',lo:8,hi:12,sets:3,rest:90,prog:1,kcal:250,pr:1.8},
+  maintain:{n:'유지',d:'지금 몸을 안정적으로 지켜요',lo:8,hi:12,sets:3,rest:90,prog:0,kcal:0,pr:1.6},
+  lean:{n:'린매스업',d:'체지방은 적게, 근육은 천천히 늘려요',lo:8,hi:12,sets:4,rest:90,prog:1,kcal:150,pr:1.8},
+  bulk:{n:'벌크업',d:'무게를 빠르게 올려 크게 키워요',lo:6,hi:10,sets:4,rest:120,prog:1,kcal:450,pr:1.8}
 };
 const KEY='workout-v1';
 let S=load();
@@ -189,6 +189,16 @@ function recommend(){
     return{sp,last}});
   info.sort((a,b)=>a.last-b.last);return info[0]}
 
+const dayKey=(ts=Date.now())=>{const d=new Date(ts);return`${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`};
+// 하루 목표: 인바디 기초대사량이 있으면 그 값, 없으면 나이·성별로 추정(Mifflin-St Jeor)
+function target(){const p=S.profile;if(!p||!p.w)return null;
+  let bmr=p.bmr;if(!bmr){if(!p.age||!p.sex||!p.h)return null;bmr=10*p.w+6.25*p.h-5*p.age+(p.sex==='m'?5:-161)}
+  const g=GOALS[p.goal]||GOALS.muscle,f=(p.days||4)>=6?1.725:(p.days||4)>=4?1.55:1.375;
+  const kcal=Math.round((bmr*f+g.kcal)/10)*10,prot=Math.round(p.w*g.pr),fat=Math.round(p.w*(p.goal==='cut'?0.8:0.9));
+  return{bmr:Math.round(bmr),kcal,prot,fat,carb:Math.max(0,Math.round((kcal-prot*4-fat*9)/4))}}
+const todayMeals=()=>(S.meals||[]).filter(m=>m.d===dayKey());
+const recentMeals=()=>{const seen=new Set(),out=[];for(const m of [...(S.meals||[])].reverse()){if(!seen.has(m.n)){seen.add(m.n);out.push(m)}if(out.length>=8)break}return out};
+
 // ───────── 상태/타이머 ─────────
 let tab='today',rest=null,sheet=null,ob=S.profile?null:{step:0};
 const ses=()=>S.active;
@@ -213,6 +223,8 @@ setInterval(()=>{
 },250);
 
 // ───────── 액션 ─────────
+function readOb(){const g=id=>{const e=$(id);return e?parseFloat(e.value)||0:undefined};
+  for(const [k,id] of [['h','#ob-h'],['w','#ob-w'],['age','#ob-age'],['fat','#ob-fat'],['mus','#ob-mus'],['bmr','#ob-bmr']]){const v=g(id);if(v!==undefined)ob[k]=v}}
 const A={
   tab:t=>{tab=t;render()},
   start:()=>startSession([]),
@@ -244,19 +256,26 @@ const A={
   export:()=>{const b=new Blob([JSON.stringify(S,null,1)],{type:'application/json'});
     const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='workout-backup.json';a.click()},
   wipe:()=>{if(confirm('모든 기록을 지울까요? 되돌릴 수 없어요.')&&confirm('정말 지울까요?')){S.sessions=[];S.active=null;save();render()}},
+  // 식단
+  addmeal:()=>{const n=$('#m-n').value.trim(),k=parseInt($('#m-k').value)||0,p=parseInt($('#m-p').value)||0;
+    if(!n&&!k)return;(S.meals=S.meals||[]).push({d:dayKey(),ts:Date.now(),n:n||'식사',k,p});save();haptic(20);render()},
+  readd:i=>{const m=recentMeals()[i];if(!m)return;(S.meals=S.meals||[]).push({d:dayKey(),ts:Date.now(),n:m.n,k:m.k,p:m.p});save();haptic(20);render()},
+  delmeal:ts=>{S.meals=S.meals.filter(m=>m.ts!==ts);save();render()},
   // 설문
+  obsex:v=>{readOb();ob.sex=v;render()},
+  obdays:v=>{readOb();ob.days=v;render()},
   redo:()=>{ob={step:0,...(S.profile||{})};render()},
   obgoal:k=>{ob.goal=k;render()},
   obsplit:k=>{ob.split=k;render()},
   obback:()=>{if(ob.step>0)ob.step--;render()},
   obnext:()=>{
     if(ob.step===0){if(!ob.goal)return;ob.step=1}
-    else if(ob.step===1){const g=id=>parseFloat($(id).value)||0;
-      ob.h=g('#ob-h');ob.w=g('#ob-w');ob.fat=g('#ob-fat');ob.mus=g('#ob-mus');
-      if(!ob.h||!ob.w){alert('키와 몸무게를 입력해 주세요');return}ob.step=2}
+    else if(ob.step===1){readOb();
+      if(!ob.h||!ob.w){alert('키와 몸무게를 입력해 주세요');return}
+      if(!ob.bmr&&(!ob.age||!ob.sex)){alert('인바디의 기초대사량이 없으면 나이와 성별이 필요해요');return}ob.step=2}
     else{if(!ob.split)return;
       const old=S.profile&&S.profile.goal===ob.goal;
-      S.profile={goal:ob.goal,h:ob.h,w:ob.w,fat:ob.fat,mus:ob.mus,split:ob.split};
+      S.profile={goal:ob.goal,h:ob.h,w:ob.w,age:ob.age,sex:ob.sex,days:ob.days||4,fat:ob.fat,mus:ob.mus,bmr:ob.bmr,split:ob.split};
       if(!old)S.set.rest=GOALS[ob.goal].rest;
       ob=null;save()}
     render()}
@@ -279,9 +298,14 @@ function onboard(){
   if(ob.step===0)return`${dots}<h1>목표가 뭐예요?</h1><p class="sub">목표에 맞춰 횟수, 세트, 휴식 시간을 정해 드려요</p>
     ${Object.entries(GOALS).map(([k,g])=>`<button class="opt ${ob.goal===k?'on':''}" data-a="obgoal" data-p="${k}"><b>${g.n}</b><span>${g.d}</span></button>`).join('')}
     <button class="btn" data-a="obnext" style="margin-top:6px;${ob.goal?'':'opacity:.4'}">다음</button>`;
-  if(ob.step===1)return`${back}${dots}<h1>몸 상태를 알려 주세요</h1><p class="sub">키와 몸무게는 꼭 필요해요. 인바디 검사지가 있으면 같이 적어 주세요. 없으면 비워 두세요.</p>
-    <div class="card"><div class="two"><label>키(cm)<input id="ob-h" type="number" inputmode="decimal" value="${ob.h||''}"></label><label>몸무게(kg)<input id="ob-w" type="number" inputmode="decimal" value="${ob.w||''}"></label></div></div>
-    <div class="card"><div class="small" style="margin-bottom:10px">인바디 (선택)</div><div class="two"><label>체지방률(%)<input id="ob-fat" type="number" inputmode="decimal" value="${ob.fat||''}"></label><label>골격근량(kg)<input id="ob-mus" type="number" inputmode="decimal" value="${ob.mus||''}"></label></div></div>
+  if(ob.step===1)return`${back}${dots}<h1>몸 상태를 알려 주세요</h1><p class="sub">식단 목표를 계산하는 데 써요. 인바디 검사지가 있으면 기초대사량까지 적어 주세요. 없으면 비워 두세요.</p>
+    <div class="card"><div class="two"><label>키(cm)<input id="ob-h" type="number" inputmode="decimal" value="${ob.h||''}"></label><label>몸무게(kg)<input id="ob-w" type="number" inputmode="decimal" value="${ob.w||''}"></label></div>
+    <div class="two" style="margin-top:10px"><label>나이<input id="ob-age" type="number" inputmode="numeric" value="${ob.age||''}"></label>
+    <label>성별<div class="row" style="margin-top:4px">${[['m','남'],['f','여']].map(([k,l])=>`<button class="btn sm grow ${ob.sex===k?'':'gray'}" data-a="obsex" data-p="${k}" style="padding:14px 0">${l}</button>`).join('')}</div></label></div>
+    <div class="small" style="margin:14px 0 6px">주 운동 횟수</div><div class="row">${[3,4,5,6].map(d=>`<button class="btn sm grow ${(ob.days||4)===d?'':'gray'}" data-a="obdays" data-p="${d}">${d}회${d===6?'+':''}</button>`).join('')}</div></div>
+    <div class="card"><div class="small" style="margin-bottom:10px">인바디 (선택)</div>
+    <div class="two"><label>기초대사량(kcal)<input id="ob-bmr" type="number" inputmode="numeric" value="${ob.bmr||''}"></label></div>
+    <div class="two" style="margin-top:10px"><label>체지방률(%)<input id="ob-fat" type="number" inputmode="decimal" value="${ob.fat||''}"></label><label>골격근량(kg)<input id="ob-mus" type="number" inputmode="decimal" value="${ob.mus||''}"></label></div></div>
     <button class="btn" data-a="obnext">다음</button>`;
   return`${back}${dots}<h1>운동은 어떻게 나눌까요?</h1><p class="sub">언제든 설정에서 바꿀 수 있어요</p>
     ${Object.entries(SPLITS).map(([k,s])=>`<button class="opt ${ob.split===k?'on':''}" data-a="obsplit" data-p="${k}"><b>${s.n}</b><span>${s.d}</span></button>`).join('')}
@@ -336,11 +360,29 @@ function log(){
     <div class="small">${fmtT((s.end-s.start)/1000)} · ${sessSets(s)}세트 · ${fmtV(sessVol(s))}</div></div></summary>
     <div style="margin-top:10px">${s.entries.map(e=>`<div class="set"><span class="v">${esc(e.ex)}</span><span class="small">${e.sets.map(x=>x.t?x.t+'초':(x.w||'맨몸')+'×'+x.r).join(', ')}</span></div>`).join('')}
     <button class="btn red sm" style="margin-top:12px" data-a="delsess" data-p="${i}">기록 삭제</button></div></details>`).join('')}`}
+function bar(label,v,t,unit){const pc=t?Math.min(100,v/t*100):0;
+  return`<div style="margin-top:12px"><div class="row between small"><span>${label}</span><span><b style="color:var(--text)">${v}</b> / ${t}${unit}</span></div>
+  <div style="height:8px;border-radius:4px;background:var(--line);margin-top:6px;overflow:hidden"><div style="height:100%;width:${pc}%;background:var(--acc);border-radius:4px;transition:width .3s"></div></div></div>`}
+function diet(){
+  const t=target(),ms=todayMeals(),k=ms.reduce((a,m)=>a+m.k,0),p=ms.reduce((a,m)=>a+(m.p||0),0);
+  if(!t)return`<h1>식단</h1><div class="empty">목표 칼로리를 계산하려면<br>나이·성별 또는 인바디 기초대사량이 필요해요</div><button class="btn" data-a="redo">몸 상태 입력하기</button>`;
+  const left=t.kcal-k,rec=recentMeals();
+  return`<h1>식단</h1><p class="sub">${goal().n} 기준 · 기초대사량 ${t.bmr}kcal${S.profile.bmr?' (인바디)':' (추정)'}</p>
+  <div class="card pop"><div class="lab">${left>=0?'오늘 남은 칼로리':'목표 초과'}</div>
+    <div class="tgt">${Math.abs(left).toLocaleString()}<span style="font-size:22px"> kcal</span></div>
+    ${bar('칼로리',k,t.kcal,'kcal')}${bar('단백질',p,t.prot,'g')}
+    <div class="small" style="margin-top:14px">권장 탄수화물 ${t.carb}g · 지방 ${t.fat}g</div></div>
+  <div class="card"><div class="mid" style="margin-bottom:10px">먹은 것 기록</div>
+    <input class="txt" id="m-n" placeholder="음식 이름 (예: 닭가슴살 도시락)">
+    <div class="inputs"><label>칼로리(kcal)<input id="m-k" type="number" inputmode="numeric" placeholder="0"></label><label>단백질(g)<input id="m-p" type="number" inputmode="numeric" placeholder="0"></label></div>
+    <button class="btn" data-a="addmeal">기록하기</button>
+    ${rec.length?`<div class="small" style="margin:14px 0 6px">자주 먹는 것 (탭하면 바로 추가)</div><div class="chips" style="margin:0">${rec.map((m,i)=>`<button class="chip" data-a="readd" data-p="${i}">${esc(m.n)} · ${m.k}</button>`).join('')}</div>`:''}</div>
+  ${ms.length?`<div class="card">${ms.map(m=>`<div class="set" style="border-top:0;border-bottom:1px solid var(--line)"><span class="v">${esc(m.n)}</span><span class="small">${m.k}kcal${m.p?' · '+m.p+'g':''}</span><button class="x" data-a="delmeal" data-p="${m.ts}">✕</button></div>`).join('')}</div>`:''}`}
 function settings(){
   const p=S.profile||{};
   return`<h1>설정</h1><p class="sub">데이터는 이 폰 안에만 저장돼요</p>
   <div class="card"><div class="row between"><div><div class="mid">${goal().n} · ${split().n}</div>
-  <div class="small">${p.h||'-'}cm · ${p.w||'-'}kg${p.fat?' · 체지방 '+p.fat+'%':''}${p.mus?' · 골격근 '+p.mus+'kg':''}</div></div></div>
+  <div class="small">${p.h||'-'}cm · ${p.w||'-'}kg${p.bmr?' · 기초대사량 '+p.bmr+'kcal':''}${p.fat?' · 체지방 '+p.fat+'%':''}${p.mus?' · 골격근 '+p.mus+'kg':''}</div></div></div>
   <button class="btn gray sm" data-a="redo" style="margin-top:12px">목표 · 분할 · 몸 상태 바꾸기</button></div>
   <div class="card"><div class="mid" style="margin-bottom:10px">휴식 시간</div>
   <div class="row">${[60,90,120,180].map(s=>`<button class="btn sm grow ${S.set.rest===s?'':'gray'}" data-a="setrest" data-p="${s}">${s>=120?s/60+'분':s+'초'}</button>`).join('')}</div>
@@ -352,7 +394,7 @@ function render(){
   document.body.classList.toggle('fx-off',!S.set.fx);
   const host=$('#ui')||document.body.appendChild(Object.assign(document.createElement('div'),{id:'ui'}));
   if(ob){$('#app').innerHTML=`<div class="pop">${onboard()}</div>`;host.innerHTML='';return}
-  const main=tab==='today'?today():tab==='log'?log():settings();
+  const main=tab==='today'?today():tab==='log'?log():tab==='diet'?diet():settings();
   let r='';
   if(rest)r=rest.done?`<div class="rest end"><div class="mid">휴식 끝! 다음 세트 가요 💪</div></div>`
     :`<div class="rest"><div class="row"><div class="t" id="rt">${fmtT((rest.end-Date.now())/1000)}</div><div class="grow small">휴식 중</div>
@@ -363,7 +405,7 @@ function render(){
     <input class="txt" id="sq" placeholder="검색 또는 새 운동 이름" value="${esc(sheet.q)}" style="margin-top:12px">
     <div class="chips">${['전체',...GROUPS].map(g=>`<button class="chip ${sheet.g===g?'on':''}" data-a="chipg" data-p="${g}">${g}</button>`).join('')}</div>
     <div id="plist">${pickList()}</div><button class="btn gray" style="margin-top:12px" data-a="newex">＋ 입력한 이름으로 추가</button></div></div>`;
-  const tabs=[['today','🏋️','오늘'],['log','📊','기록'],['set','⚙️','설정']];
+  const tabs=[['today','🏋️','오늘'],['diet','🍽️','식단'],['log','📊','기록'],['set','⚙️','설정']];
   $('#app').innerHTML=`<div class="${tab==='today'?'':'pop'}">${main}</div>`;
   host.innerHTML=r+sh+`<div class="tabbar"><div>${tabs.map(t=>`<button class="tab ${tab===t[0]?'on':''}" data-a="tab" data-p="${t[0]}"><i>${t[1]}</i>${t[2]}</button>`).join('')}</div></div>`;
 }
