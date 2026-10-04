@@ -205,8 +205,20 @@ const todayMeals=()=>(S.meals||[]).filter(m=>m.d===dayKey());
 const autoCat=ts=>{const h=new Date(ts).getHours();return h<10?'아침':h<15?'점심':h<21?'저녁':'간식'};
 const mealCat=m=>m.c||autoCat(m.ts);
 const cats=()=>S.mealCats||(S.mealCats=['아침','점심','저녁','간식']);
-const foods=()=>S.foods||(S.foods=[{n:'닭가슴살 100g',k:109,p:23},{n:'현미밥 1공기',k:310,p:6},{n:'계란 1개',k:75,p:6},{n:'고구마 1개',k:130,p:1},{n:'바나나 1개',k:90,p:1},{n:'프로틴 쉐이크',k:120,p:24}]);
-let dietCat=null,dEdit=false;
+const DEF_FOODS=[{n:'닭가슴살 100g',k:109,p:23},{n:'현미밥 1공기(210g)',k:310,p:6},{n:'계란 1개',k:75,p:6},{n:'고구마 1개(150g)',k:190,p:2},
+  {n:'바나나 1개',k:90,p:1},{n:'프로틴 쉐이크 1스쿱',k:120,p:24},{n:'두부 반 모(150g)',k:120,p:12},{n:'그릭요거트 100g',k:100,p:9},
+  {n:'오트밀 40g',k:150,p:5},{n:'아몬드 한줌(25g)',k:150,p:5},{n:'연어 100g',k:200,p:20},{n:'소고기 안심 100g',k:160,p:21},
+  {n:'참치캔 1캔(100g)',k:130,p:24},{n:'샐러드 1접시',k:80,p:3},{n:'우유 200ml',k:130,p:7}];
+const foods=()=>{if(!S.foods)S.foods=DEF_FOODS.map(f=>({...f}));
+  if((S.foodsV||0)<2){const have=new Set(S.foods.map(f=>f.n.split(/[ (]/)[0]));
+    for(const f of DEF_FOODS)if(!have.has(f.n.split(/[ (]/)[0]))S.foods.push({...f});S.foodsV=2;save()}
+  return S.foods};
+let dietCat=null,dEdit=false,fsheet=null,selDay=null,rEdit=false;
+const splitKey=()=>S.profile?.split||'3';
+const dayList=sp=>(S.routines&&S.routines[splitKey()]&&S.routines[splitKey()][sp.k])||sp.list;
+function setDayList(sp,l){S.routines=S.routines||{};(S.routines[splitKey()]=S.routines[splitKey()]||{})[sp.k]=l;save()}
+const selDayObj=()=>split().days.find(d=>d.k===selDay)||recommend().sp;
+function lastOfDay(sp){let last=-1;for(const x of S.sessions){if(x.entries.some(e=>sp.g.includes(exInfo(e.ex).g)))last=Math.max(last,x.start)}return last}
 
 // ───────── 상태/타이머 ─────────
 let tab='today',rest=null,sheet=null,ob=S.profile?null:{step:0};
@@ -245,7 +257,7 @@ function readOb(){const g=id=>{const e=$(id);return e?parseFloat(e.value)||0:und
 const A={
   tab:t=>{tab=t;render()},
   start:()=>startSession([]),
-  routine:k=>startSession(split().days.find(s=>s.k===k).list),
+  routine:k=>startSession([...dayList(split().days.find(s=>s.k===k))]),
   end:()=>{const a=ses();if(!a.entries.some(e=>e.sets.length)&&!confirm('기록된 세트가 없어요. 그냥 종료할까요?'))return;
     if(a.entries.some(e=>e.sets.length)&&!confirm('운동을 끝낼까요?'))return;endSession()},
   add:i=>{const e=ses().entries[i],box=document.querySelector(`[data-e="${i}"]`);
@@ -257,7 +269,11 @@ const A={
   rmex:i=>{if(!confirm('이 운동을 목록에서 뺄까요?'))return;ses().entries.splice(i,1);save();render()},
   pick:()=>{sheet={q:'',g:'전체'};render()},
   swap:i=>{sheet={q:'',g:'전체',replace:i};render()},
-  choose:n=>{const a=ses();
+  choose:n=>{
+    if(sheet&&sheet.rt!=null){const sp=selDayObj(),l=[...dayList(sp)];
+      if(sheet.rt>=0)l[sheet.rt]=n;else if(!l.includes(n))l.push(n);
+      setDayList(sp,l);sheet=null;render();return}
+    const a=ses();
     if(sheet&&sheet.replace!=null){const e=a.entries[sheet.replace];e.ex=n;e.sug=suggest(n)}
     else if(!a.entries.some(e=>e.ex===n))a.entries.push({ex:n,sets:[],sug:suggest(n)});
     sheet=null;save();render()},
@@ -289,6 +305,19 @@ const A={
         meals:todayMeals().map(m=>({n:m.n,k:m.k,p:m.p,cat:mealCat(m)}))});
       coachTxt=d.text||'';render()}
     catch(e){b.textContent='연결 실패 · 다시 시도'}},
+  rday:k=>{selDay=k;render()},
+  redit:()=>{rEdit=!rEdit;render()},
+  rup:i=>{const sp=selDayObj(),l=[...dayList(sp)];if(i>0){[l[i-1],l[i]]=[l[i],l[i-1]];setDayList(sp,l);render()}},
+  rdown:i=>{const sp=selDayObj(),l=[...dayList(sp)];if(i<l.length-1){[l[i+1],l[i]]=[l[i],l[i+1]];setDayList(sp,l);render()}},
+  rrm:i=>{const sp=selDayObj(),l=[...dayList(sp)];l.splice(i,1);setDayList(sp,l);render()},
+  rswap:i=>{sheet={q:'',g:'전체',rt:i};render()},
+  radd:()=>{sheet={q:'',g:'전체',rt:-1};render()},
+  rreset:()=>{const sp=selDayObj();if(S.routines&&S.routines[splitKey()])delete S.routines[splitKey()][sp.k];save();render()},
+  editfood:i=>{fsheet=i;render()},
+  fclose:()=>{fsheet=null;render()},
+  fsave:()=>{const n=$('#e-n').value.trim(),k=parseInt($('#e-k').value)||0,p=parseInt($('#e-p').value)||0;if(!n)return;
+    foods()[fsheet]={n,k,p};fsheet=null;save();render()},
+  fdel:()=>{if(!confirm(`'${foods()[fsheet].n}'을(를) 목록에서 지울까요?`))return;foods().splice(fsheet,1);fsheet=null;save();render()},
   mcat:c=>{dietCat=c;render()},
   dedit:()=>{dEdit=!dEdit;render()},
   addfood:i=>{const f=foods()[i];if(!f)return;(S.meals=S.meals||[]).push({d:dayKey(),ts:Date.now(),n:f.n,k:f.k,p:f.p,c:dietCat});save();haptic(20);render()},
@@ -368,17 +397,19 @@ function pickList(){
 function today(){
   const a=ses();
   if(!a){
-    const r=recommend(),sp=r.sp,since=r.last<0?'아직 기록이 없어요':`마지막 ${dayDiff(r.last)}일 전`;
-    const others=split().days.filter(x=>x.k!==sp.k);
+    const r=recommend(),days=split().days,sp=days.find(d=>d.k===selDay)||r.sp,list=dayList(sp);
+    const last=lastOfDay(sp),since=last<0?'아직 기록이 없어요':`마지막 ${dayDiff(last)}일 전`;
+    const custom=!!(S.routines&&S.routines[splitKey()]&&S.routines[splitKey()][sp.k]);
+    const row=(n,i)=>rEdit
+      ?`<div class="set"><button class="v" data-a="rswap" data-p="${i}" style="text-align:left;font-weight:600">${esc(n)} <span class="small">· 바꾸기</span></button><button class="x" data-a="rup" data-p="${i}">▲</button><button class="x" data-a="rdown" data-p="${i}">▼</button><button class="x" data-a="rrm" data-p="${i}" style="color:var(--red)">✕</button></div>`
+      :`<div class="set"><span class="v">${esc(n)}</span><span class="small">${(()=>{const q=suggest(n);return q.t?q.t+'초':q.w?q.w+'kg × '+q.r:'맨몸 × '+q.r})()}</span></div>`;
     return`<h1>오늘 운동</h1><p class="sub">${new Date().getMonth()+1}월 ${new Date().getDate()}일 · ${goal().n} · ${split().n}</p>
-    <div class="card pop"><span class="chip on">오늘의 추천</span>
-      <div class="big" style="margin:10px 0 2px">${sp.k} 데이</div>
-      <div class="small">${sp.desc} · ${since}</div>
-      <div style="margin:14px 0">${sp.list.map(n=>{const s=suggest(n);return`<div class="set"><span class="v">${esc(n)}</span><span class="small">${s.t?s.t+'초':s.w?s.w+'kg × '+s.r:'맨몸 × '+s.r}</span></div>`}).join('')}</div>
-      <button class="btn" data-a="routine" data-p="${sp.k}">이 루틴으로 시작</button></div>
-    <div class="card"><div class="small" style="margin-bottom:10px">다른 루틴</div>
-      <div class="row" style="flex-wrap:wrap">${others.map(x=>`<button class="btn gray sm grow" data-a="routine" data-p="${x.k}">${x.k}</button>`).join('')}
-      <button class="btn gray sm grow" data-a="start">자유롭게</button></div></div>`}
+    <div class="chips" style="margin:0 0 12px">${days.map(d=>`<button class="chip ${d.k===sp.k?'on':''}" data-a="rday" data-p="${d.k}" style="font-size:14px;padding:8px 14px">${d.k}${d.k===r.sp.k?' ★':''}</button>`).join('')}</div>
+    <div class="card pop"><div class="row between"><div><div class="big">${sp.k} 데이</div><div class="small">${sp.desc} · ${since}</div></div>${sp.k===r.sp.k?'<span class="chip on">오늘의 추천</span>':''}</div>
+      <div style="margin:14px 0">${list.length?list.map(row).join(''):'<div class="small">운동이 없어요. 아래에서 추가하세요</div>'}</div>
+      ${rEdit
+        ?`<button class="btn gray" data-a="radd">＋ 운동 추가</button><div class="row" style="margin-top:10px">${custom?'<button class="btn gray sm grow" data-a="rreset">기본으로 되돌리기</button>':''}<button class="btn sm grow" data-a="redit">완료</button></div>`
+        :`<button class="btn" data-a="routine" data-p="${sp.k}">이 루틴으로 시작</button><div class="row" style="margin-top:10px"><button class="btn gray sm grow" data-a="redit">✏️ 루틴 편집</button><button class="btn gray sm grow" data-a="start">자유롭게 시작</button></div>`}</div>`}
   const v=sessVol(a),n=sessSets(a);
   return`<h1>운동 중</h1><p class="sub">운동 이름을 두 번 탭하면 다른 운동으로 바꿀 수 있어요</p>
   <div class="stats"><div class="stat"><span class="small">시간</span><b id="elapsed">${fmtT((Date.now()-a.start)/1000)}</b></div>
@@ -421,9 +452,9 @@ function diet(){
     ${dEdit?`<input class="txt" id="cat-n" placeholder="새 카테고리" style="width:130px;padding:6px 10px;margin:0;font-size:13px"><button class="chip on" data-a="addcat">추가</button>`:''}</div>
   <div class="card"><div class="row between" style="margin-bottom:12px"><div class="mid">${esc(dietCat)}</div><button class="chip ${dEdit?'on':''}" data-a="dedit">${dEdit?'완료':'편집'}</button></div>
     ${groups.length?groups.map(g=>`<div class="set" style="border-top:0;border-bottom:1px solid var(--line)"><span class="v">${esc(g.n)}${g.cnt>1?' × '+g.cnt:''}</span><span class="small">${g.k*g.cnt}kcal${g.p?' · '+g.p*g.cnt+'g':''}</span><button class="x" data-a="delmeal" data-p="${g.ts}">✕</button></div>`).join(''):`<div class="small" style="padding:4px 0 12px">아직 없어요. 아래에서 먹은 걸 탭하세요</div>`}
-    <div class="small" style="margin:14px 0 8px">${dEdit?'지울 식단템의 ✕를 누르세요':'탭하면 '+esc(dietCat)+'에 추가돼요'}</div>
+    <div class="small" style="margin:14px 0 8px">${dEdit?'수정할 식단템을 탭하세요 (이름·칼로리·단백질·삭제)':'탭하면 '+esc(dietCat)+'에 추가돼요 · 값은 대략이에요, 편집에서 내 걸로 고치세요'}</div>
     <div class="foods">${fl.map((f,i)=>dEdit
-      ?`<div class="food"><b>${esc(f.n)}</b><span>${f.k}kcal · ${f.p}g</span><button class="x" data-a="delfood" data-p="${i}">✕</button></div>`
+      ?`<div class="food" data-a="editfood" data-p="${i}" style="outline:1px dashed var(--acc-b)"><b>${esc(f.n)}</b><span>${f.k}kcal · ${f.p}g · 탭해서 수정</span></div>`
       :`<div class="food" data-a="addfood" data-p="${i}"><b>${esc(f.n)}</b><span>${f.k}kcal · ${f.p}g</span></div>`).join('')}</div></div>
   <div class="card"><div class="mid" style="margin-bottom:10px">새 식단템</div>
     <input class="txt" id="f-n" placeholder="이름 (예: 두부 반 모)">
@@ -453,13 +484,20 @@ function render(){
     <button data-a="restadj" data-p="-10">-10</button><button data-a="restadj" data-p="10">+10</button><button data-a="skip">건너뛰기</button></div><div class="bar" id="rb" style="width:0"></div></div>`;
   let sh='';
   if(sheet)sh=`<div class="sheet-bg" data-a="close"><div class="sheet" onclick="event.stopPropagation()">
-    <div class="row between"><div class="big">${sheet.replace!=null?'다른 운동으로 바꾸기':'운동 고르기'}</div><button class="x" data-a="close">닫기</button></div>
+    <div class="row between"><div class="big">${sheet.replace!=null||sheet.rt>=0?'다른 운동으로 바꾸기':'운동 고르기'}</div><button class="x" data-a="close">닫기</button></div>
     <input class="txt" id="sq" placeholder="검색 또는 새 운동 이름" value="${esc(sheet.q)}" style="margin-top:12px">
     <div class="chips">${['전체',...GROUPS].map(g=>`<button class="chip ${sheet.g===g?'on':''}" data-a="chipg" data-p="${g}">${g}</button>`).join('')}</div>
     <div id="plist">${pickList()}</div><button class="btn gray" style="margin-top:12px" data-a="newex">＋ 입력한 이름으로 추가</button></div></div>`;
+  let fs='';
+  if(fsheet!=null&&foods()[fsheet]){const f=foods()[fsheet];fs=`<div class="sheet-bg" data-a="fclose"><div class="sheet" onclick="event.stopPropagation()">
+    <div class="big" style="margin-bottom:12px">식단템 수정</div>
+    <input class="txt" id="e-n" value="${esc(f.n)}" placeholder="이름 (양도 적어요. 예: 닭가슴살 100g)">
+    <div class="inputs"><label>칼로리(kcal)<input id="e-k" type="number" inputmode="numeric" value="${f.k}"></label><label>단백질(g)<input id="e-p" type="number" inputmode="numeric" value="${f.p}"></label></div>
+    <button class="btn" data-a="fsave">저장</button>
+    <div class="row" style="margin-top:10px"><button class="btn red sm grow" data-a="fdel">삭제</button><button class="btn gray sm grow" data-a="fclose">취소</button></div></div></div>`}
   const tabs=[['today','🏋️','오늘'],['diet','🍽️','식단'],['log','📊','기록'],['set','⚙️','설정']];
   $('#app').innerHTML=`<div class="${tab==='today'?'':'pop'}">${main}</div>`;
-  host.innerHTML=r+sh+`<div class="tabbar"><div>${tabs.map(t=>`<button class="tab ${tab===t[0]?'on':''}" data-a="tab" data-p="${t[0]}"><i>${t[1]}</i>${t[2]}</button>`).join('')}</div></div>`;
+  host.innerHTML=r+sh+fs+`<div class="tabbar"><div>${tabs.map(t=>`<button class="tab ${tab===t[0]?'on':''}" data-a="tab" data-p="${t[0]}"><i>${t[1]}</i>${t[2]}</button>`).join('')}</div></div>`;
 }
 render();
 // 인트로: 1초 안팎, 탭하면 건너뜀
