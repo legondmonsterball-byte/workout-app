@@ -3,81 +3,79 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
-<meta name="theme-color" content="#f2f4f6">
+<meta name="theme-color" content="#0b0b0e">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="운동">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon.svg">
-<link rel="apple-touch-icon" href="icon.svg">
+<link rel="apple-touch-icon" href="icon.png">
 <title>운동 기록</title>
 <style>
 :root{
-  --bg:#f2f4f6;--card:#fff;--text:#191f28;--sub:#8b95a1;--line:#e5e8eb;
-  --acc:#3182f6;--acc-t:rgba(49,130,246,.12);--ok:#16a34a;--ok-t:rgba(22,163,74,.12);
-  --red:#f04452;--red-t:rgba(240,68,82,.1);--gray-t:rgba(139,149,161,.15);
-}
-@media (prefers-color-scheme:dark){
-  :root{--bg:#101114;--card:#1b1d22;--text:#f2f4f6;--sub:#8b95a1;--line:#2a2d33;
-  --acc:#4c9bff;--acc-t:rgba(76,155,255,.16);--ok:#34d399;--ok-t:rgba(52,211,153,.16);--red-t:rgba(240,68,82,.18)}
-  meta[name=theme-color]{content:#101114}
+  --bg:#0b0b0e;--card:#17171c;--text:#fff;--sub:#9aa0aa;--line:#25252c;
+  --acc:#c6ff3d;--acc-t:rgba(198,255,61,.14);--acc-b:rgba(198,255,61,.3);
+  --red:#ff6b78;--red-t:rgba(255,107,120,.14);--gray-t:rgba(154,160,170,.16);
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;height:100%;background:var(--bg);color:var(--text);
+html,body{margin:0;height:100%;background:var(--bg);color:var(--text);color-scheme:dark;
   font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Pretendard","Noto Sans KR",sans-serif;
-  -webkit-font-smoothing:antialiased}
+  -webkit-font-smoothing:antialiased;touch-action:manipulation}
 body{overscroll-behavior:none}
 #app{max-width:520px;margin:0 auto;min-height:100%;padding:calc(env(safe-area-inset-top) + 20px) 16px calc(150px + env(safe-area-inset-bottom))}
 h1{font-size:26px;font-weight:800;margin:8px 4px 4px;letter-spacing:-.5px}
-.sub{color:var(--sub);font-size:14px;margin:0 4px 18px}
-.card{background:var(--card);border-radius:20px;padding:18px;margin-bottom:12px}
+.sub{color:var(--sub);font-size:14px;margin:0 4px 18px;line-height:1.5}
+.card{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:18px;margin-bottom:12px}
 .row{display:flex;align-items:center;gap:10px}
 .between{justify-content:space-between}
 .grow{flex:1}
 .big{font-size:22px;font-weight:800;letter-spacing:-.4px}
-.mid{font-size:17px;font-weight:700}
+.mid{font-size:18px;font-weight:700;user-select:none;-webkit-user-select:none}
 .small{font-size:13px;color:var(--sub)}
+.lab{font-size:11px;color:var(--sub);font-weight:700;letter-spacing:1px}
 .chip{display:inline-block;padding:5px 10px;border-radius:999px;font-size:12px;font-weight:600;background:var(--gray-t);color:var(--sub)}
 .chip.on{background:var(--acc-t);color:var(--acc)}
 button{font:inherit;color:inherit;border:0;background:none;cursor:pointer;padding:0}
-.btn{display:block;width:100%;padding:15px;border-radius:14px;font-weight:700;font-size:16px;text-align:center;
-  background:var(--acc-t);color:var(--acc);transition:transform .12s,background .12s}
+.btn{display:block;width:100%;padding:15px;border-radius:16px;font-weight:700;font-size:16px;text-align:center;
+  background:var(--acc-t);color:var(--acc);border:1px solid var(--acc-b);transition:transform .12s}
 .btn:active{transform:scale(.97)}
-.btn.gray{background:var(--gray-t);color:var(--text)}
-.btn.red{background:var(--red-t);color:var(--red)}
+.btn.gray{background:var(--gray-t);color:var(--text);border-color:transparent}
+.btn.red{background:var(--red-t);color:var(--red);border-color:transparent}
 .btn.sm{display:inline-block;width:auto;padding:9px 14px;font-size:14px;border-radius:12px}
 .stats{display:flex;gap:8px;margin-bottom:12px}
-.stat{flex:1;background:var(--card);border-radius:16px;padding:14px}
+.stat{flex:1;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px}
 .stat b{display:block;font-size:20px;font-weight:800;margin-top:2px;font-variant-numeric:tabular-nums}
+.tgt{font-size:46px;font-weight:800;letter-spacing:-1.5px;line-height:1.05;margin:14px 0 4px;
+  background:linear-gradient(135deg,#c6ff3d,#3dffb0);-webkit-background-clip:text;background-clip:text;color:transparent}
+.ring{--p:0;width:58px;height:58px;border-radius:50%;background:conic-gradient(var(--acc) calc(var(--p)*1%),var(--line) 0);display:grid;place-items:center;flex:none}
+.ring i{width:46px;height:46px;border-radius:50%;background:var(--card);display:grid;place-items:center;font-style:normal;font-weight:800;font-size:13px}
 .set{display:flex;align-items:center;gap:8px;padding:9px 0;border-top:1px solid var(--line);font-variant-numeric:tabular-nums}
 .set .n{width:42px;color:var(--sub);font-size:14px}
 .set .v{flex:1;font-weight:600}
 .x{color:var(--sub);font-size:18px;padding:2px 8px}
-.inputs{display:flex;gap:8px;margin-top:12px}
+.inputs{display:flex;gap:8px;margin:12px 0}
 .inputs label{flex:1;font-size:12px;color:var(--sub)}
 .inputs input,input.txt{width:100%;margin-top:4px;padding:12px;border-radius:12px;border:0;background:var(--gray-t);
   font:inherit;font-size:18px;font-weight:700;color:var(--text);text-align:center;outline:none}
 input.txt{text-align:left;font-size:16px;font-weight:500}
-.done{width:64px;align-self:flex-end;height:48px;border-radius:12px;background:var(--acc-t);color:var(--acc);font-weight:800;font-size:15px}
-.done:active{transform:scale(.94)}
 .pop{animation:pop .35s cubic-bezier(.2,1.6,.4,1)}
 @keyframes pop{0%{transform:scale(.96);opacity:.5}100%{transform:none;opacity:1}}
 .fx-off .pop,.fx-off .intro{animation:none!important}
 .tabbar{position:fixed;left:0;right:0;bottom:0;display:flex;justify-content:center;
-  background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  background:rgba(11,11,14,.88);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
   padding-bottom:env(safe-area-inset-bottom);border-top:1px solid var(--line);z-index:5}
 .tabbar>div{display:flex;width:100%;max-width:520px}
 .tab{flex:1;padding:11px 0 10px;text-align:center;font-size:11px;color:var(--sub);font-weight:600}
 .tab i{display:block;font-style:normal;font-size:21px;margin-bottom:2px;filter:grayscale(1);opacity:.6}
 .tab.on{color:var(--acc)}.tab.on i{filter:none;opacity:1}
 .rest{position:fixed;left:12px;right:12px;bottom:calc(66px + env(safe-area-inset-bottom));max-width:496px;margin:0 auto;z-index:6;
-  background:var(--text);color:var(--bg);border-radius:18px;padding:12px 14px;overflow:hidden}
+  background:#26262e;border:1px solid #34343e;border-radius:18px;padding:12px 14px;overflow:hidden}
 .rest .bar{position:absolute;left:0;bottom:0;height:3px;background:var(--acc);transition:width .25s linear}
 .rest .t{font-size:26px;font-weight:800;font-variant-numeric:tabular-nums;min-width:76px}
-.rest button{background:rgba(127,127,127,.28);border-radius:10px;padding:8px 11px;font-weight:700;font-size:13px;color:inherit}
-.rest.end{background:var(--ok);color:#fff}
-.sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:20;display:flex;align-items:flex-end;justify-content:center}
-.sheet{background:var(--bg);width:100%;max-width:520px;max-height:82%;overflow:auto;border-radius:24px 24px 0 0;padding:18px 16px calc(24px + env(safe-area-inset-bottom));animation:up .25s ease-out}
+.rest button{background:rgba(255,255,255,.12);border-radius:10px;padding:8px 11px;font-weight:700;font-size:13px}
+.rest.end{background:var(--acc);color:#0b0b0e;border-color:var(--acc)}
+.sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:20;display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--bg);border:1px solid var(--line);width:100%;max-width:520px;max-height:82%;overflow:auto;border-radius:24px 24px 0 0;padding:18px 16px calc(24px + env(safe-area-inset-bottom));animation:up .25s ease-out}
 .fx-off .sheet{animation:none}
 @keyframes up{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
 .chips{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0}
@@ -88,14 +86,23 @@ input.txt{text-align:left;font-size:16px;font-weight:500}
 .bars span{position:absolute;bottom:-18px;left:0;right:0;text-align:center;font-size:10px;color:var(--sub)}
 .sw{display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-top:1px solid var(--line)}
 .toggle{width:50px;height:30px;border-radius:15px;background:var(--gray-t);position:relative;transition:background .2s}
-.toggle::after{content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.25)}
-.toggle.on{background:var(--acc)}.toggle.on::after{transform:translateX(20px)}
+.toggle::after{content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;transition:transform .2s}
+.toggle.on{background:var(--acc)}.toggle.on::after{transform:translateX(20px);background:#0b0b0e}
 .intro{position:fixed;inset:0;background:var(--bg);z-index:50;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;animation:introout .9s ease forwards}
 .intro .logo{font-size:56px;animation:pop .6s cubic-bezier(.2,1.6,.4,1)}
 .intro b{font-size:20px;font-weight:800}
 @keyframes introout{0%,70%{opacity:1}100%{opacity:0;visibility:hidden}}
-.empty{text-align:center;color:var(--sub);padding:40px 0}
+.empty{text-align:center;color:var(--sub);padding:40px 0;line-height:1.7}
 details summary{list-style:none;cursor:pointer}details summary::-webkit-details-marker{display:none}
+.opt{display:block;width:100%;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:10px;transition:border-color .15s}
+.opt b{display:block;font-size:17px;margin-bottom:3px}
+.opt span{color:var(--sub);font-size:13px}
+.opt.on{border-color:var(--acc);background:var(--acc-t)}
+.opt.on b{color:var(--acc)}
+.dots{display:flex;gap:6px;margin:6px 4px 18px}.dots i{height:4px;flex:1;border-radius:2px;background:var(--line)}.dots i.on{background:var(--acc)}
+.two{display:flex;gap:10px}.two label{flex:1;font-size:12px;color:var(--sub)}
+.two input{width:100%;margin-top:4px;padding:14px;border-radius:12px;border:0;background:var(--gray-t);font:inherit;font-size:18px;font-weight:700;color:var(--text);outline:none}
+.hint{font-size:12px;color:var(--sub);text-align:center;margin:6px 0 14px}
 </style>
 </head>
 <body>
@@ -111,11 +118,35 @@ const EX=[
   {n:'스쿼트',g:'하체'},{n:'레그프레스',g:'하체'},{n:'루마니안 데드리프트',g:'하체'},{n:'레그 컬',g:'하체'},{n:'런지',g:'하체'},{n:'카프 레이즈',g:'하체'},
   {n:'플랭크',g:'코어',time:1},{n:'크런치',g:'코어'},{n:'레그 레이즈',g:'코어'}
 ];
-const SPLITS=[
-  {k:'밀기',desc:'가슴 · 어깨 · 삼두',g:['가슴','어깨'],list:['벤치프레스','인클라인 덤벨프레스','덤벨 숄더프레스','사이드 레터럴 레이즈','트라이셉스 푸시다운']},
-  {k:'당기기',desc:'등 · 이두',g:['등','팔'],list:['데드리프트','랫풀다운','시티드 로우','페이스풀','덤벨 컬']},
-  {k:'하체',desc:'하체 · 코어',g:['하체','코어'],list:['스쿼트','레그프레스','루마니안 데드리프트','레그 컬','플랭크']}
-];
+const SPLITS={
+  '3':{n:'3분할',d:'밀기 · 당기기 · 하체',days:[
+    {k:'밀기',desc:'가슴 · 어깨 · 삼두',g:['가슴','어깨'],list:['벤치프레스','인클라인 덤벨프레스','덤벨 숄더프레스','사이드 레터럴 레이즈','트라이셉스 푸시다운']},
+    {k:'당기기',desc:'등 · 이두',g:['등','팔'],list:['데드리프트','랫풀다운','시티드 로우','페이스풀','덤벨 컬']},
+    {k:'하체',desc:'하체 · 코어',g:['하체','코어'],list:['스쿼트','레그프레스','루마니안 데드리프트','레그 컬','플랭크']}]},
+  '2':{n:'2분할',d:'상체 · 하체',days:[
+    {k:'상체',desc:'가슴 · 등 · 어깨 · 팔',g:['가슴','등','어깨','팔'],list:['벤치프레스','랫풀다운','덤벨 숄더프레스','시티드 로우','덤벨 컬','트라이셉스 푸시다운']},
+    {k:'하체',desc:'하체 · 코어',g:['하체','코어'],list:['스쿼트','레그프레스','루마니안 데드리프트','레그 컬','카프 레이즈','플랭크']}]},
+  '4':{n:'4분할',d:'가슴 · 등 · 어깨/팔 · 하체',days:[
+    {k:'가슴',desc:'가슴 · 삼두',g:['가슴'],list:['벤치프레스','인클라인 덤벨프레스','케이블 플라이','푸시업','트라이셉스 푸시다운']},
+    {k:'등',desc:'등 · 이두',g:['등'],list:['데드리프트','랫풀다운','바벨 로우','시티드 로우','풀업']},
+    {k:'어깨·팔',desc:'어깨 · 팔',g:['어깨','팔'],list:['덤벨 숄더프레스','사이드 레터럴 레이즈','페이스풀','덤벨 컬','해머 컬','트라이셉스 푸시다운']},
+    {k:'하체',desc:'하체 · 코어',g:['하체','코어'],list:['스쿼트','레그프레스','루마니안 데드리프트','레그 컬','플랭크']}]},
+  '5':{n:'5분할',d:'가슴 · 등 · 하체 · 어깨 · 팔',days:[
+    {k:'가슴',desc:'가슴',g:['가슴'],list:['벤치프레스','인클라인 덤벨프레스','케이블 플라이','푸시업']},
+    {k:'등',desc:'등',g:['등'],list:['데드리프트','랫풀다운','바벨 로우','시티드 로우','풀업']},
+    {k:'하체',desc:'하체 · 코어',g:['하체','코어'],list:['스쿼트','레그프레스','루마니안 데드리프트','레그 컬','플랭크']},
+    {k:'어깨',desc:'어깨',g:['어깨'],list:['덤벨 숄더프레스','사이드 레터럴 레이즈','페이스풀']},
+    {k:'팔',desc:'이두 · 삼두',g:['팔'],list:['덤벨 컬','해머 컬','트라이셉스 푸시다운']}]},
+  'F':{n:'전신',d:'매번 전신을 한 번에',days:[
+    {k:'전신',desc:'전신',g:['가슴','등','어깨','하체','팔','코어'],list:['스쿼트','벤치프레스','바벨 로우','덤벨 숄더프레스','플랭크']}]}
+};
+const GOALS={
+  cut:{n:'체중 감량',d:'지방은 줄이고 근육은 지켜요',lo:12,hi:15,sets:3,rest:60,prog:1},
+  muscle:{n:'근육량 증가',d:'꾸준히 근육을 키워요',lo:8,hi:12,sets:3,rest:90,prog:1},
+  maintain:{n:'유지',d:'지금 몸을 안정적으로 지켜요',lo:8,hi:12,sets:3,rest:90,prog:0},
+  lean:{n:'린매스업',d:'체지방은 적게, 근육은 천천히 늘려요',lo:8,hi:12,sets:4,rest:90,prog:1},
+  bulk:{n:'벌크업',d:'무게를 빠르게 올려 크게 키워요',lo:6,hi:10,sets:4,rest:120,prog:1}
+};
 const KEY='workout-v1';
 let S=load();
 function load(){try{const s=JSON.parse(localStorage.getItem(KEY));if(s)return s}catch(e){}
@@ -125,6 +156,8 @@ const allEx=()=>EX.concat(S.custom);
 const exInfo=n=>allEx().find(e=>e.n===n)||{n,g:'기타'};
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const $=s=>document.querySelector(s);
+const goal=()=>GOALS[S.profile?.goal]||GOALS.muscle;
+const split=()=>SPLITS[S.profile?.split]||SPLITS['3'];
 
 // ───────── 계산 ─────────
 const vol=sets=>sets.reduce((a,s)=>a+(s.w||0)*(s.r||0),0);
@@ -135,23 +168,29 @@ const fmtT=sec=>{sec=Math.max(0,Math.round(sec));const h=Math.floor(sec/3600),m=
 const fmtV=v=>v>=10000?(v/1000).toFixed(1)+'t':v.toLocaleString()+'kg';
 const dayDiff=ts=>Math.floor((Date.now()-ts)/864e5);
 const fmtD=ts=>{const d=new Date(ts);return`${d.getMonth()+1}/${d.getDate()} (${'일월화수목금토'[d.getDay()]})`};
+const setTxt=s=>s.t?s.t+'초':s.w?`${s.w}kg × ${s.r}회`:`맨몸 × ${s.r}회`;
 function lastTop(name){
   for(let i=S.sessions.length-1;i>=0;i--){const e=S.sessions[i].entries.find(x=>x.ex===name);
     if(e&&e.sets.length){return e.sets.reduce((a,b)=>(b.w||0)>=(a.w||0)?b:a)}}
   return null}
+// 점진적 과부하: 지난 최고 세트 → 오늘 목표
 function suggest(name){
-  const t=lastTop(name);if(!t)return{w:0,r:10};
-  if(exInfo(name).time)return{w:0,t:(t.t||30)+5};
-  if(t.r>=12)return{w:(t.w||0)+2.5,r:8};
-  return{w:t.w||0,r:Math.min((t.r||10)+1,12)}}
+  const g=goal(),t=lastTop(name),info=exInfo(name);
+  if(!t)return info.time?{t:30,note:'처음이에요 · 편한 시간으로 시작해요'}:{w:0,r:g.lo,note:'처음이에요 · 편한 무게로 시작해요'};
+  const prev='지난번 '+setTxt(t);
+  if(info.time)return{t:(t.t||30)+(g.prog?5:0),note:prev+(g.prog?' → +5초':' → 유지')};
+  if(!g.prog)return{w:t.w||0,r:t.r,note:prev+' → 유지'};
+  if(!t.w)return{w:0,r:t.r+1,note:prev+' → 1회 더'};
+  if(t.r>=g.hi){const inc=info.g==='하체'?5:2.5;return{w:t.w+inc,r:g.lo,note:prev+` → 무게 +${inc}kg`}}
+  return{w:t.w,r:t.r+1,note:prev+' → 1회 더'}}
 function recommend(){
-  const info=SPLITS.map(sp=>{let last=-1;
+  const info=split().days.map(sp=>{let last=-1;
     for(const s of S.sessions){if(s.entries.some(e=>sp.g.includes(exInfo(e.ex).g)))last=Math.max(last,s.start)}
     return{sp,last}});
   info.sort((a,b)=>a.last-b.last);return info[0]}
 
 // ───────── 상태/타이머 ─────────
-let tab='today',rest=null,sheet=null,restNote=null;
+let tab='today',rest=null,sheet=null,ob=S.profile?null:{step:0};
 const ses=()=>S.active;
 function startSession(names){
   S.active={start:Date.now(),entries:(names||[]).map(n=>({ex:n,sets:[],sug:suggest(n)}))};save();render()}
@@ -177,7 +216,7 @@ setInterval(()=>{
 const A={
   tab:t=>{tab=t;render()},
   start:()=>startSession([]),
-  routine:k=>startSession(SPLITS.find(s=>s.k===k).list),
+  routine:k=>startSession(split().days.find(s=>s.k===k).list),
   end:()=>{const a=ses();if(!a.entries.some(e=>e.sets.length)&&!confirm('기록된 세트가 없어요. 그냥 종료할까요?'))return;
     if(a.entries.some(e=>e.sets.length)&&!confirm('운동을 끝낼까요?'))return;endSession()},
   add:i=>{const e=ses().entries[i],box=document.querySelector(`[data-e="${i}"]`);
@@ -188,7 +227,11 @@ const A={
   del:(i,j)=>{ses().entries[i].sets.splice(j,1);save();render()},
   rmex:i=>{if(!confirm('이 운동을 목록에서 뺄까요?'))return;ses().entries.splice(i,1);save();render()},
   pick:()=>{sheet={q:'',g:'전체'};render()},
-  choose:n=>{if(!ses().entries.some(e=>e.ex===n))ses().entries.push({ex:n,sets:[],sug:suggest(n)});sheet=null;save();render()},
+  swap:i=>{sheet={q:'',g:'전체',replace:i};render()},
+  choose:n=>{const a=ses();
+    if(sheet&&sheet.replace!=null){const e=a.entries[sheet.replace];e.ex=n;e.sug=suggest(n)}
+    else if(!a.entries.some(e=>e.ex===n))a.entries.push({ex:n,sets:[],sug:suggest(n)});
+    sheet=null;save();render()},
   close:()=>{sheet=null;render()},
   chipg:g=>{sheet.g=g;render()},
   newex:()=>{const n=$('#sq').value.trim();if(!n)return;
@@ -200,25 +243,62 @@ const A={
   delsess:i=>{if(!confirm('이 기록을 지울까요?'))return;S.sessions.splice(i,1);save();render()},
   export:()=>{const b=new Blob([JSON.stringify(S,null,1)],{type:'application/json'});
     const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='workout-backup.json';a.click()},
-  wipe:()=>{if(confirm('모든 기록을 지울까요? 되돌릴 수 없어요.')&&confirm('정말 지울까요?')){S.sessions=[];S.active=null;save();render()}}
+  wipe:()=>{if(confirm('모든 기록을 지울까요? 되돌릴 수 없어요.')&&confirm('정말 지울까요?')){S.sessions=[];S.active=null;save();render()}},
+  // 설문
+  redo:()=>{ob={step:0,...(S.profile||{})};render()},
+  obgoal:k=>{ob.goal=k;render()},
+  obsplit:k=>{ob.split=k;render()},
+  obback:()=>{if(ob.step>0)ob.step--;render()},
+  obnext:()=>{
+    if(ob.step===0){if(!ob.goal)return;ob.step=1}
+    else if(ob.step===1){const g=id=>parseFloat($(id).value)||0;
+      ob.h=g('#ob-h');ob.w=g('#ob-w');ob.fat=g('#ob-fat');ob.mus=g('#ob-mus');
+      if(!ob.h||!ob.w){alert('키와 몸무게를 입력해 주세요');return}ob.step=2}
+    else{if(!ob.split)return;
+      const old=S.profile&&S.profile.goal===ob.goal;
+      S.profile={goal:ob.goal,h:ob.h,w:ob.w,fat:ob.fat,mus:ob.mus,split:ob.split};
+      if(!old)S.set.rest=GOALS[ob.goal].rest;
+      ob=null;save()}
+    render()}
 };
 document.addEventListener('click',e=>{
   const t=e.target.closest('[data-a]');if(!t)return;
   const args=(t.dataset.p||'').split('|').map(x=>/^-?\d+$/.test(x)?+x:x).filter(x=>x!=='');
   A[t.dataset.a](...args)});
+// 운동 이름 더블탭 → 다른 운동으로 바꾸기
+let lt={k:null,t:0};
+document.addEventListener('click',e=>{
+  const d=e.target.closest('[data-dbl]');if(!d)return;const now=Date.now();
+  if(lt.k===d.dataset.dbl&&now-lt.t<350){lt={k:null,t:0};A.swap(+d.dataset.dbl)}else lt={k:d.dataset.dbl,t:now}});
 document.addEventListener('input',e=>{if(e.target.id==='sq'){sheet.q=e.target.value;const p=$('#plist');if(p)p.innerHTML=pickList()}});
 
 // ───────── 화면 ─────────
+function onboard(){
+  const dots=`<div class="dots">${[0,1,2].map(i=>`<i class="${i<=ob.step?'on':''}"></i>`).join('')}</div>`;
+  const back=ob.step>0?`<button class="x" data-a="obback" style="margin-bottom:6px">← 이전</button>`:'';
+  if(ob.step===0)return`${dots}<h1>목표가 뭐예요?</h1><p class="sub">목표에 맞춰 횟수, 세트, 휴식 시간을 정해 드려요</p>
+    ${Object.entries(GOALS).map(([k,g])=>`<button class="opt ${ob.goal===k?'on':''}" data-a="obgoal" data-p="${k}"><b>${g.n}</b><span>${g.d}</span></button>`).join('')}
+    <button class="btn" data-a="obnext" style="margin-top:6px;${ob.goal?'':'opacity:.4'}">다음</button>`;
+  if(ob.step===1)return`${back}${dots}<h1>몸 상태를 알려 주세요</h1><p class="sub">키와 몸무게는 꼭 필요해요. 인바디 검사지가 있으면 같이 적어 주세요. 없으면 비워 두세요.</p>
+    <div class="card"><div class="two"><label>키(cm)<input id="ob-h" type="number" inputmode="decimal" value="${ob.h||''}"></label><label>몸무게(kg)<input id="ob-w" type="number" inputmode="decimal" value="${ob.w||''}"></label></div></div>
+    <div class="card"><div class="small" style="margin-bottom:10px">인바디 (선택)</div><div class="two"><label>체지방률(%)<input id="ob-fat" type="number" inputmode="decimal" value="${ob.fat||''}"></label><label>골격근량(kg)<input id="ob-mus" type="number" inputmode="decimal" value="${ob.mus||''}"></label></div></div>
+    <button class="btn" data-a="obnext">다음</button>`;
+  return`${back}${dots}<h1>운동은 어떻게 나눌까요?</h1><p class="sub">언제든 설정에서 바꿀 수 있어요</p>
+    ${Object.entries(SPLITS).map(([k,s])=>`<button class="opt ${ob.split===k?'on':''}" data-a="obsplit" data-p="${k}"><b>${s.n}</b><span>${s.d}</span></button>`).join('')}
+    <button class="btn" data-a="obnext" style="margin-top:6px;${ob.split?'':'opacity:.4'}">시작하기</button>`}
 function entryCard(e,i){
-  const time=exInfo(e.ex).time;
-  const last=e.sets[e.sets.length-1]||e.sug||{};
+  const time=exInfo(e.ex).time,g=goal(),sug=e.sug||{};
+  const last=e.sets[e.sets.length-1]||sug;
   const field=(l,n,v,step)=>`<label>${l}<input name="${n}" type="number" inputmode="decimal" step="${step||1}" value="${v||''}" placeholder="0"></label>`;
+  const tgt=sug.t?sug.t+'초':sug.w?`${sug.w}kg × ${sug.r}`:`맨몸 × ${sug.r}`;
+  const pct=Math.min(100,e.sets.length/g.sets*100);
   return`<div class="card" data-e="${i}">
-    <div class="row between"><div><div class="mid">${esc(e.ex)}</div><div class="small">${exInfo(e.ex).g}${e.sets.length&&!time?' · 볼륨 '+fmtV(vol(e.sets)):''}</div></div>
-    <button class="x" data-a="rmex" data-p="${i}">⋯</button></div>
-    ${e.sets.map((s,j)=>`<div class="set"><span class="n">${j+1}세트</span><span class="v">${s.t?s.t+'초':(s.w?s.w+'kg × ':'맨몸 × ')+s.r+'회'}</span><button class="x" data-a="del" data-p="${i}|${j}">✕</button></div>`).join('')}
-    <div class="inputs">${time?field('시간(초)','t',last.t):field('무게(kg)','w',last.w,0.5)+field('횟수','r',last.r)}
-    <button class="done" data-a="add" data-p="${i}">완료</button></div></div>`}
+    <div class="row"><div class="grow"><div class="lab">${exInfo(e.ex).g}</div><div class="mid" data-dbl="${i}">${esc(e.ex)}</div></div>
+    <div class="ring" style="--p:${pct}"><i>${e.sets.length}/${g.sets}</i></div><button class="x" data-a="rmex" data-p="${i}">✕</button></div>
+    <div class="tgt">${tgt}</div><div class="small">${esc(sug.note||'')}</div>
+    <div style="margin-top:12px">${e.sets.map((s,j)=>`<div class="set"><span class="n">${j+1}세트</span><span class="v">${setTxt(s)}</span><button class="x" data-a="del" data-p="${i}|${j}">✕</button></div>`).join('')}</div>
+    <div class="inputs">${time?field('시간(초)','t',last.t):field('무게(kg)','w',last.w,0.5)+field('횟수','r',last.r)}</div>
+    <button class="btn" data-a="add" data-p="${i}">세트 완료 · 휴식 ${fmtT(S.set.rest)}</button></div>`}
 function pickList(){
   const q=sheet.q.trim().toLowerCase();
   const l=allEx().filter(e=>(sheet.g==='전체'||e.g===sheet.g)&&e.n.toLowerCase().includes(q));
@@ -227,18 +307,19 @@ function pickList(){
 function today(){
   const a=ses();
   if(!a){
-    const r=recommend(),sp=r.sp,since=r.last<0?'아직 기록이 없어요':`마지막 ${r.last>0?dayDiff(r.last)+'일 전':''}`;
-    return`<h1>오늘 운동</h1><p class="sub">${new Date().getMonth()+1}월 ${new Date().getDate()}일</p>
+    const r=recommend(),sp=r.sp,since=r.last<0?'아직 기록이 없어요':`마지막 ${dayDiff(r.last)}일 전`;
+    const others=split().days.filter(x=>x.k!==sp.k);
+    return`<h1>오늘 운동</h1><p class="sub">${new Date().getMonth()+1}월 ${new Date().getDate()}일 · ${goal().n} · ${split().n}</p>
     <div class="card pop"><span class="chip on">오늘의 추천</span>
       <div class="big" style="margin:10px 0 2px">${sp.k} 데이</div>
       <div class="small">${sp.desc} · ${since}</div>
       <div style="margin:14px 0">${sp.list.map(n=>{const s=suggest(n);return`<div class="set"><span class="v">${esc(n)}</span><span class="small">${s.t?s.t+'초':s.w?s.w+'kg × '+s.r:'맨몸 × '+s.r}</span></div>`}).join('')}</div>
       <button class="btn" data-a="routine" data-p="${sp.k}">이 루틴으로 시작</button></div>
     <div class="card"><div class="small" style="margin-bottom:10px">다른 루틴</div>
-      <div class="row">${SPLITS.filter(x=>x.k!==sp.k).map(x=>`<button class="btn gray sm grow" data-a="routine" data-p="${x.k}">${x.k}</button>`).join('')}
+      <div class="row" style="flex-wrap:wrap">${others.map(x=>`<button class="btn gray sm grow" data-a="routine" data-p="${x.k}">${x.k}</button>`).join('')}
       <button class="btn gray sm grow" data-a="start">자유롭게</button></div></div>`}
   const v=sessVol(a),n=sessSets(a);
-  return`<h1>운동 중</h1><p class="sub">세트를 끝낼 때마다 휴식 타이머가 자동으로 시작돼요</p>
+  return`<h1>운동 중</h1><p class="sub">운동 이름을 두 번 탭하면 다른 운동으로 바꿀 수 있어요</p>
   <div class="stats"><div class="stat"><span class="small">시간</span><b id="elapsed">${fmtT((Date.now()-a.start)/1000)}</b></div>
   <div class="stat"><span class="small">볼륨</span><b>${fmtV(v)}</b></div><div class="stat"><span class="small">세트</span><b>${n}</b></div></div>
   ${a.entries.map(entryCard).join('')}
@@ -256,8 +337,12 @@ function log(){
     <div style="margin-top:10px">${s.entries.map(e=>`<div class="set"><span class="v">${esc(e.ex)}</span><span class="small">${e.sets.map(x=>x.t?x.t+'초':(x.w||'맨몸')+'×'+x.r).join(', ')}</span></div>`).join('')}
     <button class="btn red sm" style="margin-top:12px" data-a="delsess" data-p="${i}">기록 삭제</button></div></details>`).join('')}`}
 function settings(){
+  const p=S.profile||{};
   return`<h1>설정</h1><p class="sub">데이터는 이 폰 안에만 저장돼요</p>
-  <div class="card"><div class="mid" style="margin-bottom:10px">기본 휴식 시간</div>
+  <div class="card"><div class="row between"><div><div class="mid">${goal().n} · ${split().n}</div>
+  <div class="small">${p.h||'-'}cm · ${p.w||'-'}kg${p.fat?' · 체지방 '+p.fat+'%':''}${p.mus?' · 골격근 '+p.mus+'kg':''}</div></div></div>
+  <button class="btn gray sm" data-a="redo" style="margin-top:12px">목표 · 분할 · 몸 상태 바꾸기</button></div>
+  <div class="card"><div class="mid" style="margin-bottom:10px">휴식 시간</div>
   <div class="row">${[60,90,120,180].map(s=>`<button class="btn sm grow ${S.set.rest===s?'':'gray'}" data-a="setrest" data-p="${s}">${s>=120?s/60+'분':s+'초'}</button>`).join('')}</div>
   <div class="sw" style="margin-top:14px"><div><div style="font-weight:600">이펙트 끄기</div><div class="small">인트로, 진동, 애니메이션</div></div>
   <button class="toggle ${S.set.fx?'':'on'}" data-a="fx"></button></div></div>
@@ -265,23 +350,22 @@ function settings(){
   <button class="btn red" data-a="wipe">모든 기록 지우기</button></div>`}
 function render(){
   document.body.classList.toggle('fx-off',!S.set.fx);
+  const host=$('#ui')||document.body.appendChild(Object.assign(document.createElement('div'),{id:'ui'}));
+  if(ob){$('#app').innerHTML=`<div class="pop">${onboard()}</div>`;host.innerHTML='';return}
   const main=tab==='today'?today():tab==='log'?log():settings();
   let r='';
-  if(rest)r=rest.done?`<div class="rest end"><div class="row between"><div class="mid">휴식 끝! 다음 세트 가요 💪</div></div></div>`
-    :`<div class="rest"><div class="row"><div class="t" id="rt">${fmtT((rest.end-Date.now())/1000)}</div><div class="grow small" style="color:inherit;opacity:.7">휴식 중</div>
+  if(rest)r=rest.done?`<div class="rest end"><div class="mid">휴식 끝! 다음 세트 가요 💪</div></div>`
+    :`<div class="rest"><div class="row"><div class="t" id="rt">${fmtT((rest.end-Date.now())/1000)}</div><div class="grow small">휴식 중</div>
     <button data-a="restadj" data-p="-10">-10</button><button data-a="restadj" data-p="10">+10</button><button data-a="skip">건너뛰기</button></div><div class="bar" id="rb" style="width:0"></div></div>`;
   let sh='';
   if(sheet)sh=`<div class="sheet-bg" data-a="close"><div class="sheet" onclick="event.stopPropagation()">
-    <div class="row between"><div class="big">운동 고르기</div><button class="x" data-a="close">닫기</button></div>
+    <div class="row between"><div class="big">${sheet.replace!=null?'다른 운동으로 바꾸기':'운동 고르기'}</div><button class="x" data-a="close">닫기</button></div>
     <input class="txt" id="sq" placeholder="검색 또는 새 운동 이름" value="${esc(sheet.q)}" style="margin-top:12px">
     <div class="chips">${['전체',...GROUPS].map(g=>`<button class="chip ${sheet.g===g?'on':''}" data-a="chipg" data-p="${g}">${g}</button>`).join('')}</div>
-    <div id="plist">${pickList()}</div><button class="btn gray" style="margin-top:12px" data-a="newex">＋ 직접 추가</button></div></div>`;
+    <div id="plist">${pickList()}</div><button class="btn gray" style="margin-top:12px" data-a="newex">＋ 입력한 이름으로 추가</button></div></div>`;
   const tabs=[['today','🏋️','오늘'],['log','📊','기록'],['set','⚙️','설정']];
-  const q=sheet?document.activeElement?.id==='sq':false;
   $('#app').innerHTML=`<div class="${tab==='today'?'':'pop'}">${main}</div>`;
-  let host=$('#ui');if(!host){host=document.createElement('div');host.id='ui';document.body.appendChild(host)}
   host.innerHTML=r+sh+`<div class="tabbar"><div>${tabs.map(t=>`<button class="tab ${tab===t[0]?'on':''}" data-a="tab" data-p="${t[0]}"><i>${t[1]}</i>${t[2]}</button>`).join('')}</div></div>`;
-  if(sheet&&!sheet.focused){sheet.focused=1;}
 }
 render();
 // 인트로: 1초 안팎, 탭하면 건너뜀
