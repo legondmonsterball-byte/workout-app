@@ -151,6 +151,7 @@ const GOALS={
   lean:{n:'린매스업',d:'체지방은 적게, 근육은 천천히 늘려요',lo:8,hi:12,sets:4,rest:90,prog:1,kcal:150,pr:1.8},
   bulk:{n:'벌크업',d:'무게를 빠르게 올려 크게 키워요',lo:6,hi:10,sets:4,rest:120,prog:1,kcal:450,pr:1.8}
 };
+const AI_URL=''; // 운동 앱 Gemini Worker 주소 (배포 후 채움). 비어 있으면 AI 버튼이 안 보인다
 const KEY='workout-v1';
 let S=load();
 function load(){try{const s=JSON.parse(localStorage.getItem(KEY));if(s)return s}catch(e){}
@@ -231,6 +232,12 @@ setInterval(()=>{
 },250);
 
 // ───────── 액션 ─────────
+async function ai(path,body){const r=await fetch(AI_URL+path,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
+  if(!r.ok)throw new Error(r.status);return r.json()}
+async function photoB64(file){const bm=await createImageBitmap(file),sc=Math.min(1,1024/Math.max(bm.width,bm.height));
+  const c=document.createElement('canvas');c.width=Math.round(bm.width*sc);c.height=Math.round(bm.height*sc);
+  c.getContext('2d').drawImage(bm,0,0,c.width,c.height);return c.toDataURL('image/jpeg',.8).split(',')[1]}
+let coachTxt='';
 function readFood(){const n=$('#f-n').value.trim(),k=parseInt($('#f-k').value)||0,p=parseInt($('#f-p').value)||0;
   return n||k?{n:n||'식사',k,p}:null}
 function readOb(){const g=id=>{const e=$(id);return e?parseFloat(e.value)||0:undefined};
@@ -267,6 +274,21 @@ const A={
     const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='workout-backup.json';a.click()},
   wipe:()=>{if(confirm('모든 기록을 지울까요? 되돌릴 수 없어요.')&&confirm('정말 지울까요?')){S.sessions=[];S.active=null;save();render()}},
   // 식단
+  estimate:async()=>{const n=$('#f-n').value.trim(),file=$('#f-img').files[0],b=$('#est');
+    if(!n&&!file){b.textContent='이름을 쓰거나 사진을 골라 주세요';return}
+    b.textContent='추정 중…';
+    try{const body={text:n};if(file){body.image=await photoB64(file);body.mime='image/jpeg'}
+      const it=(await ai('/api/food',body)).items||[];if(!it.length)throw 0;
+      $('#f-n').value=it.map(x=>x.n).join(' + ');$('#f-k').value=it.reduce((a,x)=>a+x.k,0);$('#f-p').value=it.reduce((a,x)=>a+x.p,0);
+      b.textContent='✨ 다시 추정 (값은 어림이니 확인하고 저장하세요)'}
+    catch(e){b.textContent='추정 실패 · 다시 시도'}},
+  coach:async()=>{const b=$('#coach-b');b.textContent='생각 중…';
+    const p=S.profile||{};
+    try{const d=await ai('/api/coach',{profile:{goal:goal().n,h:p.h,w:p.w,age:p.age,sex:p.sex,bmr:p.bmr,fat:p.fat,mus:p.mus,split:split().n},target:target(),
+        recent:S.sessions.slice(-5).map(s=>({date:fmtD(s.start),min:Math.round((s.end-s.start)/60000),volume:sessVol(s),exercises:s.entries.map(e=>({n:e.ex,sets:e.sets.map(setTxt)}))})),
+        meals:todayMeals().map(m=>({n:m.n,k:m.k,p:m.p,cat:mealCat(m)}))});
+      coachTxt=d.text||'';render()}
+    catch(e){b.textContent='연결 실패 · 다시 시도'}},
   mcat:c=>{dietCat=c;render()},
   dedit:()=>{dEdit=!dEdit;render()},
   addfood:i=>{const f=foods()[i];if(!f)return;(S.meals=S.meals||[]).push({d:dayKey(),ts:Date.now(),n:f.n,k:f.k,p:f.p,c:dietCat});save();haptic(20);render()},
@@ -369,6 +391,7 @@ function log(){
   const wk=Date.now()-7*864e5,w=ss.filter(s=>s.start>wk);
   const last=ss.slice(-7),mx=Math.max(...last.map(sessVol),1);
   return`<h1>기록</h1><p class="sub">최근 7일 ${w.length}회 · 볼륨 ${fmtV(w.reduce((a,s)=>a+sessVol(s),0))}</p>
+  ${AI_URL?`<div class="card"><div class="mid" style="margin-bottom:8px">AI 코치</div>${coachTxt?`<div style="white-space:pre-wrap;line-height:1.6;font-size:15px;margin-bottom:12px">${esc(coachTxt)}</div>`:'<div class="small" style="margin-bottom:12px">최근 운동과 오늘 식단을 보고 조언해 줘요</div>'}<button class="btn" id="coach-b" data-a="coach">${coachTxt?'다시 물어보기':'조언 받기'}</button></div>`:''}
   <div class="card"><div class="small">최근 운동별 볼륨</div><div class="bars" style="margin-bottom:22px">
   ${last.map((s,i)=>`<div class="${i===last.length-1?'last':''}" style="height:${Math.max(4,sessVol(s)/mx*100)}%"><span>${new Date(s.start).getDate()}일</span></div>`).join('')}</div></div>
   ${ss.map((s,i)=>[s,i]).reverse().map(([s,i])=>`<details class="card"><summary><div class="row between"><div class="mid">${fmtD(s.start)}</div>
@@ -404,6 +427,7 @@ function diet(){
       :`<div class="food" data-a="addfood" data-p="${i}"><b>${esc(f.n)}</b><span>${f.k}kcal · ${f.p}g</span></div>`).join('')}</div></div>
   <div class="card"><div class="mid" style="margin-bottom:10px">새 식단템</div>
     <input class="txt" id="f-n" placeholder="이름 (예: 두부 반 모)">
+    ${AI_URL?`<div class="row" style="margin-top:10px"><label class="btn gray sm" style="flex:none;margin:0">📷 사진<input id="f-img" type="file" accept="image/*" style="display:none"></label><button class="btn sm grow" id="est" data-a="estimate" style="font-size:13px">✨ AI로 칼로리 추정</button></div>`:''}
     <div class="inputs"><label>칼로리(kcal)<input id="f-k" type="number" inputmode="numeric" placeholder="0"></label><label>단백질(g)<input id="f-p" type="number" inputmode="numeric" placeholder="0"></label></div>
     <div class="row"><button class="btn" data-a="newfood">목록에 저장</button><button class="btn gray" data-a="once">이번만 기록</button></div></div>`}
 function settings(){
