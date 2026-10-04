@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#f2f4f6">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="운동">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg">
+<link rel="apple-touch-icon" href="icon.svg">
+<title>운동 기록</title>
+<style>
+:root{
+  --bg:#f2f4f6;--card:#fff;--text:#191f28;--sub:#8b95a1;--line:#e5e8eb;
+  --acc:#3182f6;--acc-t:rgba(49,130,246,.12);--ok:#16a34a;--ok-t:rgba(22,163,74,.12);
+  --red:#f04452;--red-t:rgba(240,68,82,.1);--gray-t:rgba(139,149,161,.15);
+}
+@media (prefers-color-scheme:dark){
+  :root{--bg:#101114;--card:#1b1d22;--text:#f2f4f6;--sub:#8b95a1;--line:#2a2d33;
+  --acc:#4c9bff;--acc-t:rgba(76,155,255,.16);--ok:#34d399;--ok-t:rgba(52,211,153,.16);--red-t:rgba(240,68,82,.18)}
+  meta[name=theme-color]{content:#101114}
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Pretendard","Noto Sans KR",sans-serif;
+  -webkit-font-smoothing:antialiased}
+body{overscroll-behavior:none}
+#app{max-width:520px;margin:0 auto;min-height:100%;padding:calc(env(safe-area-inset-top) + 20px) 16px calc(150px + env(safe-area-inset-bottom))}
+h1{font-size:26px;font-weight:800;margin:8px 4px 4px;letter-spacing:-.5px}
+.sub{color:var(--sub);font-size:14px;margin:0 4px 18px}
+.card{background:var(--card);border-radius:20px;padding:18px;margin-bottom:12px}
+.row{display:flex;align-items:center;gap:10px}
+.between{justify-content:space-between}
+.grow{flex:1}
+.big{font-size:22px;font-weight:800;letter-spacing:-.4px}
+.mid{font-size:17px;font-weight:700}
+.small{font-size:13px;color:var(--sub)}
+.chip{display:inline-block;padding:5px 10px;border-radius:999px;font-size:12px;font-weight:600;background:var(--gray-t);color:var(--sub)}
+.chip.on{background:var(--acc-t);color:var(--acc)}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer;padding:0}
+.btn{display:block;width:100%;padding:15px;border-radius:14px;font-weight:700;font-size:16px;text-align:center;
+  background:var(--acc-t);color:var(--acc);transition:transform .12s,background .12s}
+.btn:active{transform:scale(.97)}
+.btn.gray{background:var(--gray-t);color:var(--text)}
+.btn.red{background:var(--red-t);color:var(--red)}
+.btn.sm{display:inline-block;width:auto;padding:9px 14px;font-size:14px;border-radius:12px}
+.stats{display:flex;gap:8px;margin-bottom:12px}
+.stat{flex:1;background:var(--card);border-radius:16px;padding:14px}
+.stat b{display:block;font-size:20px;font-weight:800;margin-top:2px;font-variant-numeric:tabular-nums}
+.set{display:flex;align-items:center;gap:8px;padding:9px 0;border-top:1px solid var(--line);font-variant-numeric:tabular-nums}
+.set .n{width:42px;color:var(--sub);font-size:14px}
+.set .v{flex:1;font-weight:600}
+.x{color:var(--sub);font-size:18px;padding:2px 8px}
+.inputs{display:flex;gap:8px;margin-top:12px}
+.inputs label{flex:1;font-size:12px;color:var(--sub)}
+.inputs input,input.txt{width:100%;margin-top:4px;padding:12px;border-radius:12px;border:0;background:var(--gray-t);
+  font:inherit;font-size:18px;font-weight:700;color:var(--text);text-align:center;outline:none}
+input.txt{text-align:left;font-size:16px;font-weight:500}
+.done{width:64px;align-self:flex-end;height:48px;border-radius:12px;background:var(--acc-t);color:var(--acc);font-weight:800;font-size:15px}
+.done:active{transform:scale(.94)}
+.pop{animation:pop .35s cubic-bezier(.2,1.6,.4,1)}
+@keyframes pop{0%{transform:scale(.96);opacity:.5}100%{transform:none;opacity:1}}
+.fx-off .pop,.fx-off .intro{animation:none!important}
+.tabbar{position:fixed;left:0;right:0;bottom:0;display:flex;justify-content:center;
+  background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  padding-bottom:env(safe-area-inset-bottom);border-top:1px solid var(--line);z-index:5}
+.tabbar>div{display:flex;width:100%;max-width:520px}
+.tab{flex:1;padding:11px 0 10px;text-align:center;font-size:11px;color:var(--sub);font-weight:600}
+.tab i{display:block;font-style:normal;font-size:21px;margin-bottom:2px;filter:grayscale(1);opacity:.6}
+.tab.on{color:var(--acc)}.tab.on i{filter:none;opacity:1}
+.rest{position:fixed;left:12px;right:12px;bottom:calc(66px + env(safe-area-inset-bottom));max-width:496px;margin:0 auto;z-index:6;
+  background:var(--text);color:var(--bg);border-radius:18px;padding:12px 14px;overflow:hidden}
+.rest .bar{position:absolute;left:0;bottom:0;height:3px;background:var(--acc);transition:width .25s linear}
+.rest .t{font-size:26px;font-weight:800;font-variant-numeric:tabular-nums;min-width:76px}
+.rest button{background:rgba(127,127,127,.28);border-radius:10px;padding:8px 11px;font-weight:700;font-size:13px;color:inherit}
+.rest.end{background:var(--ok);color:#fff}
+.sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:20;display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--bg);width:100%;max-width:520px;max-height:82%;overflow:auto;border-radius:24px 24px 0 0;padding:18px 16px calc(24px + env(safe-area-inset-bottom));animation:up .25s ease-out}
+.fx-off .sheet{animation:none}
+@keyframes up{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0}
+.pick{display:flex;justify-content:space-between;padding:14px 4px;border-top:1px solid var(--line);font-weight:600;width:100%;text-align:left}
+.bars{display:flex;align-items:flex-end;gap:6px;height:90px;margin-top:12px}
+.bars div{flex:1;background:var(--acc-t);border-radius:6px 6px 2px 2px;position:relative;min-height:3px}
+.bars div.last{background:var(--acc)}
+.bars span{position:absolute;bottom:-18px;left:0;right:0;text-align:center;font-size:10px;color:var(--sub)}
+.sw{display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-top:1px solid var(--line)}
+.toggle{width:50px;height:30px;border-radius:15px;background:var(--gray-t);position:relative;transition:background .2s}
+.toggle::after{content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+.toggle.on{background:var(--acc)}.toggle.on::after{transform:translateX(20px)}
+.intro{position:fixed;inset:0;background:var(--bg);z-index:50;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;animation:introout .9s ease forwards}
+.intro .logo{font-size:56px;animation:pop .6s cubic-bezier(.2,1.6,.4,1)}
+.intro b{font-size:20px;font-weight:800}
+@keyframes introout{0%,70%{opacity:1}100%{opacity:0;visibility:hidden}}
+.empty{text-align:center;color:var(--sub);padding:40px 0}
+details summary{list-style:none;cursor:pointer}details summary::-webkit-details-marker{display:none}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+// ───────── 데이터 ─────────
+const GROUPS=['가슴','등','어깨','하체','팔','코어'];
+const EX=[
+  {n:'벤치프레스',g:'가슴'},{n:'인클라인 덤벨프레스',g:'가슴'},{n:'푸시업',g:'가슴'},{n:'케이블 플라이',g:'가슴'},
+  {n:'덤벨 숄더프레스',g:'어깨'},{n:'사이드 레터럴 레이즈',g:'어깨'},{n:'페이스풀',g:'어깨'},
+  {n:'트라이셉스 푸시다운',g:'팔'},{n:'덤벨 컬',g:'팔'},{n:'해머 컬',g:'팔'},
+  {n:'데드리프트',g:'등'},{n:'랫풀다운',g:'등'},{n:'바벨 로우',g:'등'},{n:'시티드 로우',g:'등'},{n:'풀업',g:'등'},
+  {n:'스쿼트',g:'하체'},{n:'레그프레스',g:'하체'},{n:'루마니안 데드리프트',g:'하체'},{n:'레그 컬',g:'하체'},{n:'런지',g:'하체'},{n:'카프 레이즈',g:'하체'},
+  {n:'플랭크',g:'코어',time:1},{n:'크런치',g:'코어'},{n:'레그 레이즈',g:'코어'}
+];
+const SPLITS=[
+  {k:'밀기',desc:'가슴 · 어깨 · 삼두',g:['가슴','어깨'],list:['벤치프레스','인클라인 덤벨프레스','덤벨 숄더프레스','사이드 레터럴 레이즈','트라이셉스 푸시다운']},
+  {k:'당기기',desc:'등 · 이두',g:['등','팔'],list:['데드리프트','랫풀다운','시티드 로우','페이스풀','덤벨 컬']},
+  {k:'하체',desc:'하체 · 코어',g:['하체','코어'],list:['스쿼트','레그프레스','루마니안 데드리프트','레그 컬','플랭크']}
+];
+const KEY='workout-v1';
+let S=load();
+function load(){try{const s=JSON.parse(localStorage.getItem(KEY));if(s)return s}catch(e){}
+  return{sessions:[],active:null,custom:[],set:{fx:!matchMedia('(prefers-reduced-motion:reduce)').matches,rest:90}}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+const allEx=()=>EX.concat(S.custom);
+const exInfo=n=>allEx().find(e=>e.n===n)||{n,g:'기타'};
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const $=s=>document.querySelector(s);
+
+// ───────── 계산 ─────────
+const vol=sets=>sets.reduce((a,s)=>a+(s.w||0)*(s.r||0),0);
+const sessVol=s=>s.entries.reduce((a,e)=>a+vol(e.sets),0);
+const sessSets=s=>s.entries.reduce((a,e)=>a+e.sets.length,0);
+const fmtT=sec=>{sec=Math.max(0,Math.round(sec));const h=Math.floor(sec/3600),m=Math.floor(sec%3600/60),s=sec%60;
+  return h?`${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`:`${m}:${String(s).padStart(2,'0')}`};
+const fmtV=v=>v>=10000?(v/1000).toFixed(1)+'t':v.toLocaleString()+'kg';
+const dayDiff=ts=>Math.floor((Date.now()-ts)/864e5);
+const fmtD=ts=>{const d=new Date(ts);return`${d.getMonth()+1}/${d.getDate()} (${'일월화수목금토'[d.getDay()]})`};
+function lastTop(name){
+  for(let i=S.sessions.length-1;i>=0;i--){const e=S.sessions[i].entries.find(x=>x.ex===name);
+    if(e&&e.sets.length){return e.sets.reduce((a,b)=>(b.w||0)>=(a.w||0)?b:a)}}
+  return null}
+function suggest(name){
+  const t=lastTop(name);if(!t)return{w:0,r:10};
+  if(exInfo(name).time)return{w:0,t:(t.t||30)+5};
+  if(t.r>=12)return{w:(t.w||0)+2.5,r:8};
+  return{w:t.w||0,r:Math.min((t.r||10)+1,12)}}
+function recommend(){
+  const info=SPLITS.map(sp=>{let last=-1;
+    for(const s of S.sessions){if(s.entries.some(e=>sp.g.includes(exInfo(e.ex).g)))last=Math.max(last,s.start)}
+    return{sp,last}});
+  info.sort((a,b)=>a.last-b.last);return info[0]}
+
+// ───────── 상태/타이머 ─────────
+let tab='today',rest=null,sheet=null,restNote=null;
+const ses=()=>S.active;
+function startSession(names){
+  S.active={start:Date.now(),entries:(names||[]).map(n=>({ex:n,sets:[],sug:suggest(n)}))};save();render()}
+function endSession(){
+  const a=S.active;a.entries=a.entries.filter(e=>e.sets.length);
+  if(a.entries.length){a.end=Date.now();S.sessions.push(a)}
+  S.active=null;rest=null;save();tab='log';render()}
+function beep(){try{const c=new (window.AudioContext||window.webkitAudioContext)();
+  [0,.22,.44].forEach(t=>{const o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);
+    o.frequency.value=880;g.gain.setValueAtTime(.2,c.currentTime+t);g.gain.exponentialRampToValueAtTime(.001,c.currentTime+t+.18);
+    o.start(c.currentTime+t);o.stop(c.currentTime+t+.2)})}catch(e){}}
+function haptic(p){try{if(S.set.fx)navigator.vibrate&&navigator.vibrate(p)}catch(e){}}
+function startRest(sec){rest={end:Date.now()+sec*1000,total:sec,done:false};render()}
+setInterval(()=>{
+  const el=$('#elapsed');if(el&&S.active)el.textContent=fmtT((Date.now()-S.active.start)/1000);
+  if(rest){const left=(rest.end-Date.now())/1000,r=$('#rt');
+    if(left<=0&&!rest.done){rest.done=true;beep();navigator.vibrate&&navigator.vibrate([200,100,200,100,300]);render();
+      setTimeout(()=>{if(rest&&rest.done){rest=null;render()}},4000)}
+    else if(r&&!rest.done){r.textContent=fmtT(left);const b=$('#rb');if(b)b.style.width=(100-left/rest.total*100)+'%'}}
+},250);
+
+// ───────── 액션 ─────────
+const A={
+  tab:t=>{tab=t;render()},
+  start:()=>startSession([]),
+  routine:k=>startSession(SPLITS.find(s=>s.k===k).list),
+  end:()=>{const a=ses();if(!a.entries.some(e=>e.sets.length)&&!confirm('기록된 세트가 없어요. 그냥 종료할까요?'))return;
+    if(a.entries.some(e=>e.sets.length)&&!confirm('운동을 끝낼까요?'))return;endSession()},
+  add:i=>{const e=ses().entries[i],box=document.querySelector(`[data-e="${i}"]`);
+    const w=parseFloat(box.querySelector('[name=w]')?.value)||0,r=parseInt(box.querySelector('[name=r]')?.value)||0,
+      t=parseInt(box.querySelector('[name=t]')?.value)||0;
+    if(exInfo(e.ex).time){if(!t)return;e.sets.push({t})}else{if(!r)return;e.sets.push({w,r})}
+    save();haptic(30);render();startRest(S.set.rest)},
+  del:(i,j)=>{ses().entries[i].sets.splice(j,1);save();render()},
+  rmex:i=>{if(!confirm('이 운동을 목록에서 뺄까요?'))return;ses().entries.splice(i,1);save();render()},
+  pick:()=>{sheet={q:'',g:'전체'};render()},
+  choose:n=>{if(!ses().entries.some(e=>e.ex===n))ses().entries.push({ex:n,sets:[],sug:suggest(n)});sheet=null;save();render()},
+  close:()=>{sheet=null;render()},
+  chipg:g=>{sheet.g=g;render()},
+  newex:()=>{const n=$('#sq').value.trim();if(!n)return;
+    const g=sheet.g==='전체'?'기타':sheet.g;if(!allEx().some(e=>e.n===n))S.custom.push({n,g});A.choose(n)},
+  restadj:d=>{rest.end+=d*1000;rest.total+=d;render()},
+  skip:()=>{rest=null;render()},
+  setrest:s=>{S.set.rest=s;save();render()},
+  fx:()=>{S.set.fx=!S.set.fx;save();render()},
+  delsess:i=>{if(!confirm('이 기록을 지울까요?'))return;S.sessions.splice(i,1);save();render()},
+  export:()=>{const b=new Blob([JSON.stringify(S,null,1)],{type:'application/json'});
+    const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='workout-backup.json';a.click()},
+  wipe:()=>{if(confirm('모든 기록을 지울까요? 되돌릴 수 없어요.')&&confirm('정말 지울까요?')){S.sessions=[];S.active=null;save();render()}}
+};
+document.addEventListener('click',e=>{
+  const t=e.target.closest('[data-a]');if(!t)return;
+  const args=(t.dataset.p||'').split('|').map(x=>/^-?\d+$/.test(x)?+x:x).filter(x=>x!=='');
+  A[t.dataset.a](...args)});
+document.addEventListener('input',e=>{if(e.target.id==='sq'){sheet.q=e.target.value;const p=$('#plist');if(p)p.innerHTML=pickList()}});
+
+// ───────── 화면 ─────────
+function entryCard(e,i){
+  const time=exInfo(e.ex).time;
+  const last=e.sets[e.sets.length-1]||e.sug||{};
+  const field=(l,n,v,step)=>`<label>${l}<input name="${n}" type="number" inputmode="decimal" step="${step||1}" value="${v||''}" placeholder="0"></label>`;
+  return`<div class="card" data-e="${i}">
+    <div class="row between"><div><div class="mid">${esc(e.ex)}</div><div class="small">${exInfo(e.ex).g}${e.sets.length&&!time?' · 볼륨 '+fmtV(vol(e.sets)):''}</div></div>
+    <button class="x" data-a="rmex" data-p="${i}">⋯</button></div>
+    ${e.sets.map((s,j)=>`<div class="set"><span class="n">${j+1}세트</span><span class="v">${s.t?s.t+'초':(s.w?s.w+'kg × ':'맨몸 × ')+s.r+'회'}</span><button class="x" data-a="del" data-p="${i}|${j}">✕</button></div>`).join('')}
+    <div class="inputs">${time?field('시간(초)','t',last.t):field('무게(kg)','w',last.w,0.5)+field('횟수','r',last.r)}
+    <button class="done" data-a="add" data-p="${i}">완료</button></div></div>`}
+function pickList(){
+  const q=sheet.q.trim().toLowerCase();
+  const l=allEx().filter(e=>(sheet.g==='전체'||e.g===sheet.g)&&e.n.toLowerCase().includes(q));
+  return l.map(e=>`<button class="pick" data-a="choose" data-p="${esc(e.n)}"><span>${esc(e.n)}</span><span class="small">${e.g}</span></button>`).join('')
+    ||'<div class="empty">없어요. 아래 버튼으로 새로 추가해요</div>'}
+function today(){
+  const a=ses();
+  if(!a){
+    const r=recommend(),sp=r.sp,since=r.last<0?'아직 기록이 없어요':`마지막 ${r.last>0?dayDiff(r.last)+'일 전':''}`;
+    return`<h1>오늘 운동</h1><p class="sub">${new Date().getMonth()+1}월 ${new Date().getDate()}일</p>
+    <div class="card pop"><span class="chip on">오늘의 추천</span>
+      <div class="big" style="margin:10px 0 2px">${sp.k} 데이</div>
+      <div class="small">${sp.desc} · ${since}</div>
+      <div style="margin:14px 0">${sp.list.map(n=>{const s=suggest(n);return`<div class="set"><span class="v">${esc(n)}</span><span class="small">${s.t?s.t+'초':s.w?s.w+'kg × '+s.r:'맨몸 × '+s.r}</span></div>`}).join('')}</div>
+      <button class="btn" data-a="routine" data-p="${sp.k}">이 루틴으로 시작</button></div>
+    <div class="card"><div class="small" style="margin-bottom:10px">다른 루틴</div>
+      <div class="row">${SPLITS.filter(x=>x.k!==sp.k).map(x=>`<button class="btn gray sm grow" data-a="routine" data-p="${x.k}">${x.k}</button>`).join('')}
+      <button class="btn gray sm grow" data-a="start">자유롭게</button></div></div>`}
+  const v=sessVol(a),n=sessSets(a);
+  return`<h1>운동 중</h1><p class="sub">세트를 끝낼 때마다 휴식 타이머가 자동으로 시작돼요</p>
+  <div class="stats"><div class="stat"><span class="small">시간</span><b id="elapsed">${fmtT((Date.now()-a.start)/1000)}</b></div>
+  <div class="stat"><span class="small">볼륨</span><b>${fmtV(v)}</b></div><div class="stat"><span class="small">세트</span><b>${n}</b></div></div>
+  ${a.entries.map(entryCard).join('')}
+  <button class="btn gray" data-a="pick" style="margin-bottom:10px">＋ 운동 추가</button>
+  <button class="btn" data-a="end">운동 끝내기</button>`}
+function log(){
+  const ss=S.sessions;if(!ss.length)return`<h1>기록</h1><div class="empty">아직 기록이 없어요<br>첫 운동을 끝내면 여기에 쌓여요</div>`;
+  const wk=Date.now()-7*864e5,w=ss.filter(s=>s.start>wk);
+  const last=ss.slice(-7),mx=Math.max(...last.map(sessVol),1);
+  return`<h1>기록</h1><p class="sub">최근 7일 ${w.length}회 · 볼륨 ${fmtV(w.reduce((a,s)=>a+sessVol(s),0))}</p>
+  <div class="card"><div class="small">최근 운동별 볼륨</div><div class="bars" style="margin-bottom:22px">
+  ${last.map((s,i)=>`<div class="${i===last.length-1?'last':''}" style="height:${Math.max(4,sessVol(s)/mx*100)}%"><span>${new Date(s.start).getDate()}일</span></div>`).join('')}</div></div>
+  ${ss.map((s,i)=>[s,i]).reverse().map(([s,i])=>`<details class="card"><summary><div class="row between"><div class="mid">${fmtD(s.start)}</div>
+    <div class="small">${fmtT((s.end-s.start)/1000)} · ${sessSets(s)}세트 · ${fmtV(sessVol(s))}</div></div></summary>
+    <div style="margin-top:10px">${s.entries.map(e=>`<div class="set"><span class="v">${esc(e.ex)}</span><span class="small">${e.sets.map(x=>x.t?x.t+'초':(x.w||'맨몸')+'×'+x.r).join(', ')}</span></div>`).join('')}
+    <button class="btn red sm" style="margin-top:12px" data-a="delsess" data-p="${i}">기록 삭제</button></div></details>`).join('')}`}
+function settings(){
+  return`<h1>설정</h1><p class="sub">데이터는 이 폰 안에만 저장돼요</p>
+  <div class="card"><div class="mid" style="margin-bottom:10px">기본 휴식 시간</div>
+  <div class="row">${[60,90,120,180].map(s=>`<button class="btn sm grow ${S.set.rest===s?'':'gray'}" data-a="setrest" data-p="${s}">${s>=120?s/60+'분':s+'초'}</button>`).join('')}</div>
+  <div class="sw" style="margin-top:14px"><div><div style="font-weight:600">이펙트 끄기</div><div class="small">인트로, 진동, 애니메이션</div></div>
+  <button class="toggle ${S.set.fx?'':'on'}" data-a="fx"></button></div></div>
+  <div class="card"><button class="btn gray" data-a="export" style="margin-bottom:10px">기록 내보내기 (백업)</button>
+  <button class="btn red" data-a="wipe">모든 기록 지우기</button></div>`}
+function render(){
+  document.body.classList.toggle('fx-off',!S.set.fx);
+  const main=tab==='today'?today():tab==='log'?log():settings();
+  let r='';
+  if(rest)r=rest.done?`<div class="rest end"><div class="row between"><div class="mid">휴식 끝! 다음 세트 가요 💪</div></div></div>`
+    :`<div class="rest"><div class="row"><div class="t" id="rt">${fmtT((rest.end-Date.now())/1000)}</div><div class="grow small" style="color:inherit;opacity:.7">휴식 중</div>
+    <button data-a="restadj" data-p="-10">-10</button><button data-a="restadj" data-p="10">+10</button><button data-a="skip">건너뛰기</button></div><div class="bar" id="rb" style="width:0"></div></div>`;
+  let sh='';
+  if(sheet)sh=`<div class="sheet-bg" data-a="close"><div class="sheet" onclick="event.stopPropagation()">
+    <div class="row between"><div class="big">운동 고르기</div><button class="x" data-a="close">닫기</button></div>
+    <input class="txt" id="sq" placeholder="검색 또는 새 운동 이름" value="${esc(sheet.q)}" style="margin-top:12px">
+    <div class="chips">${['전체',...GROUPS].map(g=>`<button class="chip ${sheet.g===g?'on':''}" data-a="chipg" data-p="${g}">${g}</button>`).join('')}</div>
+    <div id="plist">${pickList()}</div><button class="btn gray" style="margin-top:12px" data-a="newex">＋ 직접 추가</button></div></div>`;
+  const tabs=[['today','🏋️','오늘'],['log','📊','기록'],['set','⚙️','설정']];
+  const q=sheet?document.activeElement?.id==='sq':false;
+  $('#app').innerHTML=`<div class="${tab==='today'?'':'pop'}">${main}</div>`;
+  let host=$('#ui');if(!host){host=document.createElement('div');host.id='ui';document.body.appendChild(host)}
+  host.innerHTML=r+sh+`<div class="tabbar"><div>${tabs.map(t=>`<button class="tab ${tab===t[0]?'on':''}" data-a="tab" data-p="${t[0]}"><i>${t[1]}</i>${t[2]}</button>`).join('')}</div></div>`;
+  if(sheet&&!sheet.focused){sheet.focused=1;}
+}
+render();
+// 인트로: 1초 안팎, 탭하면 건너뜀
+if(S.set.fx){const i=document.createElement('div');i.className='intro';i.innerHTML='<div class="logo">🏋️</div><b>오늘도 한 세트</b>';
+  i.onclick=()=>i.remove();document.body.appendChild(i);setTimeout(()=>i.remove(),950)}
+if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+</script>
+</body>
+</html>
