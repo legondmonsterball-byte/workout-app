@@ -348,6 +348,7 @@ const A={
 };
 document.addEventListener('click',e=>{
   const t=e.target.closest('[data-a]');if(!t)return;
+  if(t.classList.contains('sheet-bg')&&e.target!==t)return;
   const args=(t.dataset.p||'').split('|').map(x=>/^-?\d+$/.test(x)?+x:x).filter(x=>x!=='');
   A[t.dataset.a](...args)});
 // 운동 이름 더블탭 → 다른 운동으로 바꾸기
@@ -483,13 +484,13 @@ function render(){
     :`<div class="rest"><div class="row"><div class="t" id="rt">${fmtT((rest.end-Date.now())/1000)}</div><div class="grow small">휴식 중</div>
     <button data-a="restadj" data-p="-10">-10</button><button data-a="restadj" data-p="10">+10</button><button data-a="skip">건너뛰기</button></div><div class="bar" id="rb" style="width:0"></div></div>`;
   let sh='';
-  if(sheet)sh=`<div class="sheet-bg" data-a="close"><div class="sheet" onclick="event.stopPropagation()">
+  if(sheet)sh=`<div class="sheet-bg" data-a="close"><div class="sheet">
     <div class="row between"><div class="big">${sheet.replace!=null||sheet.rt>=0?'다른 운동으로 바꾸기':'운동 고르기'}</div><button class="x" data-a="close">닫기</button></div>
     <input class="txt" id="sq" placeholder="검색 또는 새 운동 이름" value="${esc(sheet.q)}" style="margin-top:12px">
     <div class="chips">${['전체',...GROUPS].map(g=>`<button class="chip ${sheet.g===g?'on':''}" data-a="chipg" data-p="${g}">${g}</button>`).join('')}</div>
     <div id="plist">${pickList()}</div><button class="btn gray" style="margin-top:12px" data-a="newex">＋ 입력한 이름으로 추가</button></div></div>`;
   let fs='';
-  if(fsheet!=null&&foods()[fsheet]){const f=foods()[fsheet];fs=`<div class="sheet-bg" data-a="fclose"><div class="sheet" onclick="event.stopPropagation()">
+  if(fsheet!=null&&foods()[fsheet]){const f=foods()[fsheet];fs=`<div class="sheet-bg" data-a="fclose"><div class="sheet">
     <div class="big" style="margin-bottom:12px">식단템 수정</div>
     <input class="txt" id="e-n" value="${esc(f.n)}" placeholder="이름 (양도 적어요. 예: 닭가슴살 100g)">
     <div class="inputs"><label>칼로리(kcal)<input id="e-k" type="number" inputmode="numeric" value="${f.k}"></label><label>단백질(g)<input id="e-p" type="number" inputmode="numeric" value="${f.p}"></label></div>
