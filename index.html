@@ -228,17 +228,24 @@ function startSession(names){
 function endSession(){
   const a=S.active;a.entries=a.entries.filter(e=>e.sets.length);
   if(a.entries.length){a.end=Date.now();S.sessions.push(a)}
-  S.active=null;rest=null;save();tab='log';render()}
+  S.active=null;rest=null;pushCancel();save();tab='log';render()}
 function beep(){try{const c=new (window.AudioContext||window.webkitAudioContext)();
   [0,.22,.44].forEach(t=>{const o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);
     o.frequency.value=880;g.gain.setValueAtTime(.2,c.currentTime+t);g.gain.exponentialRampToValueAtTime(.001,c.currentTime+t+.18);
     o.start(c.currentTime+t);o.stop(c.currentTime+t+.2)})}catch(e){}}
 function haptic(p){try{if(S.set.fx)navigator.vibrate&&navigator.vibrate(p)}catch(e){}}
-function startRest(sec){rest={end:Date.now()+sec*1000,total:sec,done:false};render()}
+const VAPID_PUB='BMCgVCbb9lDdOcIeV2SZdJclvsWcY2oJZ4xrJgWuC76H9uOkcAPg7KP5zzu-We47nrH_A11ShLHz1imQwYUDEzQ';
+// 휴식 끝 푸시: 앱이 백그라운드여도 서버가 시간에 맞춰 알림을 보낸다
+function pushCall(b){if(!S.set.sub)return;if(!S.set.tid){S.set.tid=Math.random().toString(36).slice(2)+Date.now().toString(36);save()}
+  fetch(AI_URL+'/api/rest',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({tid:S.set.tid,...b}),keepalive:true}).catch(()=>{})}
+const pushSched=sec=>pushCall({sub:S.set.sub,seconds:sec}),pushCancel=()=>pushCall({cancel:true});
+function clearNotif(){try{navigator.serviceWorker.ready.then(r=>r.getNotifications({tag:'rest'}).then(l=>l.forEach(n=>n.close())))}catch(e){}}
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)clearNotif()});
+function startRest(sec){rest={end:Date.now()+sec*1000,total:sec,done:false};pushSched(sec);render()}
 setInterval(()=>{
   const el=$('#elapsed');if(el&&S.active)el.textContent=fmtT((Date.now()-S.active.start)/1000);
   if(rest){const left=(rest.end-Date.now())/1000,r=$('#rt');
-    if(left<=0&&!rest.done){rest.done=true;beep();navigator.vibrate&&navigator.vibrate([200,100,200,100,300]);render();
+    if(left<=0&&!rest.done){rest.done=true;beep();setTimeout(clearNotif,1500);navigator.vibrate&&navigator.vibrate([200,100,200,100,300]);render();
       setTimeout(()=>{if(rest&&rest.done){rest=null;render()}},4000)}
     else if(r&&!rest.done){r.textContent=fmtT(left);const b=$('#rb');if(b)b.style.width=(100-left/rest.total*100)+'%'}}
 },250);
@@ -282,8 +289,17 @@ const A={
   chipg:g=>{sheet.g=g;render()},
   newex:()=>{const n=$('#sq').value.trim();if(!n)return;
     const g=sheet.g==='전체'?'기타':sheet.g;if(!allEx().some(e=>e.n===n))S.custom.push({n,g});A.choose(n)},
-  restadj:d=>{rest.end+=d*1000;rest.total+=d;render()},
-  skip:()=>{rest=null;render()},
+  restadj:d=>{rest.end+=d*1000;rest.total+=d;const l=Math.round((rest.end-Date.now())/1000);if(l>=3)pushSched(l);else pushCancel();render()},
+  skip:()=>{rest=null;pushCancel();render()},
+  pushtog:async()=>{
+    if(S.set.sub){try{const r=await navigator.serviceWorker.ready,sb=await r.pushManager.getSubscription();sb&&await sb.unsubscribe()}catch(e){}
+      pushCancel();S.set.sub=null;save();render();return}
+    if(!('PushManager' in window)){alert('홈 화면에 추가한 앱에서만 알림을 켤 수 있어요');return}
+    try{if(await Notification.requestPermission()!=='granted'){alert('알림이 꺼져 있어요. 아이폰 설정 > 알림에서 이 앱을 켜 주세요');return}
+      const r=await navigator.serviceWorker.ready;
+      const raw=atob(VAPID_PUB.replace(/-/g,'+').replace(/_/g,'/')),key=Uint8Array.from(raw,c=>c.charCodeAt(0));
+      const sb=await r.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:key});
+      S.set.sub=sb.toJSON();save();render()}catch(e){alert('알림을 켜지 못했어요: '+e.message)}},
   setrest:s=>{S.set.rest=s;save();render()},
   fx:()=>{S.set.fx=!S.set.fx;save();render()},
   delsess:i=>{if(!confirm('이 기록을 지울까요?'))return;S.sessions.splice(i,1);save();render()},
@@ -471,6 +487,8 @@ function settings(){
   <button class="btn gray sm" data-a="redo" style="margin-top:12px">목표 · 분할 · 몸 상태 바꾸기</button></div>
   <div class="card"><div class="mid" style="margin-bottom:10px">휴식 시간</div>
   <div class="row">${[60,90,120,180].map(s=>`<button class="btn sm grow ${S.set.rest===s?'':'gray'}" data-a="setrest" data-p="${s}">${s>=120?s/60+'분':s+'초'}</button>`).join('')}</div>
+  <div class="sw" style="margin-top:14px"><div><div style="font-weight:600">휴식 끝 알림</div><div class="small">화면이 꺼져 있어도 알려줘요</div></div>
+  <button class="toggle ${S.set.sub?'on':''}" data-a="pushtog"></button></div>
   <div class="sw" style="margin-top:14px"><div><div style="font-weight:600">이펙트 끄기</div><div class="small">인트로, 진동, 애니메이션</div></div>
   <button class="toggle ${S.set.fx?'':'on'}" data-a="fx"></button></div></div>
   <div class="card"><button class="btn gray" data-a="export" style="margin-bottom:10px">기록 내보내기 (백업)</button>
