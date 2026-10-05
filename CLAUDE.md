@@ -41,3 +41,8 @@
 ## 알아둘 것
 - 사용자가 요청한 기능은 사용자 말 그대로 기록. 큰 작업은 시작 전에 3줄로 확인.
 - 되돌릴 수 없는 것(공개 배포, 키 등록)만 확인하고 나머지는 만들고 넘긴다.
+
+## 휴식 끝 푸시 알림 (2026-10-05)
+- 앱: 설정 > "휴식 끝 알림" 토글 → 푸시 구독(S.set.sub) → startRest/restadj/skip에서 Worker `/api/rest`로 예약·취소. sw.js에 push/notificationclick.
+- Worker(`~/workout-worker`): Durable Object `RestTimer` 알람이 끝나는 시각에 푸시 전송. VAPID 공개키는 wrangler.jsonc·index.html, 비밀키는 `.dev.vars`(커밋 안 함)와 Worker secret `VAPID_PRIVATE_KEY`.
+- 배포: 사용자가 `! cd ~/workout-worker && pbcopy < /dev/null; grep ^VAPID_PRIVATE_KEY .dev.vars | cut -d= -f2- | tr -d '\n' | npx wrangler secret put VAPID_PRIVATE_KEY && npx wrangler deploy`
