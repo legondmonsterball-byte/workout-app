@@ -151,7 +151,7 @@ const GOALS={
   lean:{n:'린매스업',d:'체지방은 적게, 근육은 천천히 늘려요',lo:8,hi:12,sets:4,rest:90,prog:1,kcal:150,pr:1.8},
   bulk:{n:'벌크업',d:'무게를 빠르게 올려 크게 키워요',lo:6,hi:10,sets:4,rest:120,prog:1,kcal:450,pr:1.8}
 };
-const AI_URL=''; // 운동 앱 Gemini Worker 주소 (배포 후 채움). 비어 있으면 AI 버튼이 안 보인다
+const AI_URL='https://workout-ai.timetable-app.workers.dev'; // 운동 앱 Gemini Worker 주소 (배포 후 채움). 비어 있으면 AI 버튼이 안 보인다
 const KEY='workout-v1';
 let S=load();
 function load(){try{const s=JSON.parse(localStorage.getItem(KEY));if(s)return s}catch(e){}
