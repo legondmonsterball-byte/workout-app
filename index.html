@@ -228,7 +228,7 @@ function startSession(names){
 function endSession(){
   const a=S.active;a.entries=a.entries.filter(e=>e.sets.length);
   if(a.entries.length){a.end=Date.now();S.sessions.push(a)}
-  S.active=null;rest=null;pushCancel();save();tab='log';render()}
+  S.active=null;rest=null;pushCancel();save();tab='log';render();if(a.end)setTimeout(()=>shareOpen(a),300)}
 function beep(){try{const c=new (window.AudioContext||window.webkitAudioContext)();
   [0,.22,.44].forEach(t=>{const o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);
     o.frequency.value=880;g.gain.setValueAtTime(.2,c.currentTime+t);g.gain.exponentialRampToValueAtTime(.001,c.currentTime+t+.18);
@@ -249,6 +249,72 @@ setInterval(()=>{
       setTimeout(()=>{if(rest&&rest.done){rest=null;render()}},4000)}
     else if(r&&!rest.done){r.textContent=fmtT(left);const b=$('#rb');if(b)b.style.width=(100-left/rest.total*100)+'%'}}
 },250);
+
+
+// ───────── 공유 카드 ─────────
+let shr=null; // {s:세션, img:ImageBitmap|null, url:미리보기, blob}
+const FONT='-apple-system,"Apple SD Gothic Neo","Pretendard",sans-serif';
+function sessTitle(s){const g=[...new Set(s.entries.map(e=>exInfo(e.ex).g))].slice(0,3);return(g.join(' · ')||'운동')+' 데이'}
+function prList(s){ // 이번 운동에서 예전 기록보다 무거운 무게를 든 운동
+  const out=[];for(const e of s.entries){const m=Math.max(0,...e.sets.map(x=>x.w||0));if(!m)continue;
+    const before=Math.max(0,...S.sessions.filter(o=>o.start<s.start).flatMap(o=>o.entries.filter(x=>x.ex===e.ex).flatMap(x=>x.sets.map(y=>y.w||0))));
+    if(before>0&&m>before)out.push(e.ex)}return out}
+function fitText(c,t,w){if(c.measureText(t).width<=w)return t;while(t.length>1&&c.measureText(t+'…').width>w)t=t.slice(0,-1);return t+'…'}
+function drawCard(s,img){
+  const W=1080,H=1920,cv=document.createElement('canvas');cv.width=W;cv.height=H;const c=cv.getContext('2d');
+  const ACC='#c6ff3d';
+  if(img){const r=Math.max(W/img.width,H/img.height),w=img.width*r,h=img.height*r;c.drawImage(img,(W-w)/2,(H-h)/2,w,h);
+    let g=c.createLinearGradient(0,0,0,520);g.addColorStop(0,'rgba(0,0,0,.65)');g.addColorStop(1,'rgba(0,0,0,0)');c.fillStyle=g;c.fillRect(0,0,W,520);
+    g=c.createLinearGradient(0,760,0,H);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(.55,'rgba(0,0,0,.8)');g.addColorStop(1,'rgba(0,0,0,.92)');c.fillStyle=g;c.fillRect(0,760,W,H-760)}
+  else{c.fillStyle='#0b0b0e';c.fillRect(0,0,W,H);
+    const g=c.createRadialGradient(W*.8,H*.18,0,W*.8,H*.18,900);g.addColorStop(0,'rgba(198,255,61,.35)');g.addColorStop(1,'rgba(198,255,61,0)');c.fillStyle=g;c.fillRect(0,0,W,H)}
+  c.textBaseline='alphabetic';
+  const t=(txt,x,y,size,wt,col,al)=>{c.font=`${wt} ${size}px ${FONT}`;c.fillStyle=col;c.textAlign=al||'left';c.fillText(txt,x,y)};
+  const d=new Date(s.start),dt=`${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')} ${'일월화수목금토'[d.getDay()]}`;
+  t(dt,80,150,40,600,'rgba(255,255,255,.8)');
+  t(sessTitle(s),80,230,76,800,'#fff');
+  const v=sessVol(s),vs=v>=10000?(v/1000).toFixed(1):v.toLocaleString(),vu=v>=10000?'t':'kg';
+  const dur=fmtT((s.end-s.start)/1000),n=sessSets(s);
+  const prs=prList(s);
+  let y=img?1010:760;
+  if(!img){t('TOTAL VOLUME',80,y,34,700,'rgba(255,255,255,.6)');y+=190;t(vs,80,y,200,800,ACC);
+    c.font=`800 200px ${FONT}`;const vw=c.measureText(vs).width;t(vu,80+vw+16,y,70,800,ACC);y+=110}
+  else{y=1060}
+  // 요약 숫자 3개
+  const cols=[[dur,'시간'],[img?vs+vu:n+'',img?'볼륨':'세트'],[img?n+'':prs.length+'','세트'.length&&img?'세트':'PR']];
+  if(!img){cols[1]=[n+'','세트'];cols[2]=[prs.length+'','PR']}
+  cols.forEach(([val,lab],i)=>{const x=80+i*320;t(val,x,y,76,800,'#fff');t(lab,x,y+52,32,600,'rgba(255,255,255,.6)')});
+  y+=150;
+  // 운동 목록
+  c.fillStyle='rgba(255,255,255,.18)';c.fillRect(80,y,W-160,2);y+=70;
+  s.entries.slice(0,6).forEach(e=>{
+    const m=e.sets.reduce((a,x)=>x.w>a.w||(x.w===a.w&&x.r>a.r)?x:a,{w:-1,r:0});
+    const best=!e.sets.length?'':m.t||e.sets[0].t?Math.max(...e.sets.map(x=>x.t||0))+'초':m.w?`${m.w}kg × ${m.r}`:`맨몸 × ${m.r}`;
+    c.font=`700 44px ${FONT}`;const nm=fitText(c,e.ex,520);
+    t(nm,80,y,44,700,'#fff');
+    if(prs.includes(e.ex)){c.font=`700 44px ${FONT}`;const w=c.measureText(nm).width;t('PR',80+w+16,y,32,800,ACC)}
+    t(`${e.sets.length}세트  ${best}`,W-80,y,38,600,'rgba(255,255,255,.75)','right');y+=76});
+  if(s.entries.length>6)t(`외 ${s.entries.length-6}개 운동`,80,y,34,600,'rgba(255,255,255,.6)');
+  t('🏋️ 오늘도 한 세트',W/2,H-90,36,700,'rgba(255,255,255,.7)','center');
+  return cv}
+async function shareRender(){
+  const cv=drawCard(shr.s,shr.img);
+  shr.blob=await new Promise(r=>cv.toBlob(r,'image/png'));
+  if(shr.url)URL.revokeObjectURL(shr.url);shr.url=URL.createObjectURL(shr.blob);
+  const im=$('#sh-img');if(im)im.src=shr.url}
+function shareUI(){
+  let el=$('#share');if(!shr){el&&el.remove();return}
+  if(!el){el=document.createElement('div');el.id='share';el.className='sheet-bg';el.dataset.a='shareclose';document.body.appendChild(el)}
+  el.innerHTML=`<div class="sheet" style="max-height:94%;text-align:center"><div class="row between"><div class="big">공유 카드</div><button class="x" data-a="shareclose">닫기</button></div>
+  <img id="sh-img" src="${shr.url||''}" style="height:52vh;max-width:100%;border-radius:16px;margin:12px auto;display:block;background:#000">
+  <div class="row"><button class="btn gray sm grow" data-a="sharephoto">📷 사진 ${shr.img?'바꾸기':'넣기'}</button>${shr.img?'<button class="btn gray sm grow" data-a="sharenophoto">사진 빼기</button>':''}</div>
+  <button class="btn" style="margin-top:10px" data-a="sharego">공유 · 저장</button></div>
+  <input type="file" id="sh-file" accept="image/*" style="display:none">`}
+async function shareOpen(s){shr={s,img:null,url:'',blob:null};shareUI();await shareRender();shareUI()}
+document.addEventListener('change',async e=>{
+  if(e.target.id!=='sh-file'||!shr)return;const f=e.target.files[0];if(!f)return;
+  try{shr.img=await createImageBitmap(f)}catch(_){alert('사진을 열 수 없어요');return}
+  await shareRender();shareUI()});
 
 // ───────── 액션 ─────────
 async function ai(path,body){const r=await fetch(AI_URL+path,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
@@ -285,6 +351,13 @@ const A={
     if(sheet&&sheet.replace!=null){const e=a.entries[sheet.replace];e.ex=n;e.sug=suggest(n)}
     else if(!a.entries.some(e=>e.ex===n))a.entries.push({ex:n,sets:[],sug:suggest(n)});
     sheet=null;save();render()},
+  sharei:i=>shareOpen(S.sessions[i]),
+  shareclose:()=>{if(shr&&shr.url)URL.revokeObjectURL(shr.url);shr=null;shareUI()},
+  sharephoto:()=>$('#sh-file').click(),
+  sharenophoto:async()=>{shr.img=null;await shareRender();shareUI()},
+  sharego:async()=>{const f=new File([shr.blob],'workout.png',{type:'image/png'});
+    try{if(navigator.canShare&&navigator.canShare({files:[f]}))await navigator.share({files:[f]});
+      else{const a=document.createElement('a');a.href=shr.url;a.download='workout.png';a.click()}}catch(e){}},
   close:()=>{sheet=null;render()},
   chipg:g=>{sheet.g=g;render()},
   newex:()=>{const n=$('#sq').value.trim();if(!n)return;
@@ -446,7 +519,7 @@ function log(){
   ${ss.map((s,i)=>[s,i]).reverse().map(([s,i])=>`<details class="card"><summary><div class="row between"><div class="mid">${fmtD(s.start)}</div>
     <div class="small">${fmtT((s.end-s.start)/1000)} · ${sessSets(s)}세트 · ${fmtV(sessVol(s))}</div></div></summary>
     <div style="margin-top:10px">${s.entries.map(e=>`<div class="set"><span class="v">${esc(e.ex)}</span><span class="small">${e.sets.map(x=>x.t?x.t+'초':(x.w||'맨몸')+'×'+x.r).join(', ')}</span></div>`).join('')}
-    <button class="btn red sm" style="margin-top:12px" data-a="delsess" data-p="${i}">기록 삭제</button></div></details>`).join('')}`}
+    <div class="row" style="margin-top:12px"><button class="btn sm grow" data-a="sharei" data-p="${i}">📸 공유 카드</button><button class="btn red sm grow" data-a="delsess" data-p="${i}">기록 삭제</button></div></div></details>`).join('')}`}
 function bar(label,v,t,unit){const pc=t?Math.min(100,v/t*100):0;
   return`<div style="margin-top:12px"><div class="row between small"><span>${label}</span><span><b style="color:var(--text)">${v}</b> / ${t}${unit}</span></div>
   <div style="height:8px;border-radius:4px;background:var(--line);margin-top:6px;overflow:hidden"><div style="height:100%;width:${pc}%;background:var(--acc);border-radius:4px;transition:width .3s"></div></div></div>`}
