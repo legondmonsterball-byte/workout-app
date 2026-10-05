@@ -254,7 +254,7 @@ setInterval(()=>{
 // ───────── 공유 카드 ─────────
 let shr=null; // {s:세션, img:ImageBitmap|null, url:미리보기, blob}
 const FONT='-apple-system,"Apple SD Gothic Neo","Pretendard",sans-serif';
-function sessTitle(s){const g=[...new Set(s.entries.map(e=>exInfo(e.ex).g))].slice(0,3);return(g.join(' · ')||'운동')+' 데이'}
+function sessTitle(s){let g=[...new Set(s.entries.map(e=>exInfo(e.ex).g))];if(g.length>1)g=g.filter(x=>x!=='기타');return(g.slice(0,4).join('/')||'운동')}
 function prList(s){ // 이번 운동에서 예전 기록보다 무거운 무게를 든 운동
   const out=[];for(const e of s.entries){const m=Math.max(0,...e.sets.map(x=>x.w||0));if(!m)continue;
     const before=Math.max(0,...S.sessions.filter(o=>o.start<s.start).flatMap(o=>o.entries.filter(x=>x.ex===e.ex).flatMap(x=>x.sets.map(y=>y.w||0))));
@@ -264,38 +264,27 @@ function drawCard(s,img){
   const W=1080,H=1920,cv=document.createElement('canvas');cv.width=W;cv.height=H;const c=cv.getContext('2d');
   const ACC='#c6ff3d';
   if(img){const r=Math.max(W/img.width,H/img.height),w=img.width*r,h=img.height*r;c.drawImage(img,(W-w)/2,(H-h)/2,w,h);
-    let g=c.createLinearGradient(0,0,0,520);g.addColorStop(0,'rgba(0,0,0,.65)');g.addColorStop(1,'rgba(0,0,0,0)');c.fillStyle=g;c.fillRect(0,0,W,520);
-    g=c.createLinearGradient(0,760,0,H);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(.55,'rgba(0,0,0,.8)');g.addColorStop(1,'rgba(0,0,0,.92)');c.fillStyle=g;c.fillRect(0,760,W,H-760)}
+    let g=c.createLinearGradient(0,0,0,500);g.addColorStop(0,'rgba(0,0,0,.6)');g.addColorStop(1,'rgba(0,0,0,0)');c.fillStyle=g;c.fillRect(0,0,W,500);
+    g=c.createLinearGradient(0,1100,0,H);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(.5,'rgba(0,0,0,.78)');g.addColorStop(1,'rgba(0,0,0,.92)');c.fillStyle=g;c.fillRect(0,1100,W,H-1100)}
   else{c.fillStyle='#0b0b0e';c.fillRect(0,0,W,H);
-    const g=c.createRadialGradient(W*.8,H*.18,0,W*.8,H*.18,900);g.addColorStop(0,'rgba(198,255,61,.35)');g.addColorStop(1,'rgba(198,255,61,0)');c.fillStyle=g;c.fillRect(0,0,W,H)}
+    const g=c.createRadialGradient(W*.8,H*.2,0,W*.8,H*.2,950);g.addColorStop(0,'rgba(198,255,61,.35)');g.addColorStop(1,'rgba(198,255,61,0)');c.fillStyle=g;c.fillRect(0,0,W,H)}
   c.textBaseline='alphabetic';
   const t=(txt,x,y,size,wt,col,al)=>{c.font=`${wt} ${size}px ${FONT}`;c.fillStyle=col;c.textAlign=al||'left';c.fillText(txt,x,y)};
   const d=new Date(s.start),dt=`${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')} ${'일월화수목금토'[d.getDay()]}`;
-  t(dt,80,150,40,600,'rgba(255,255,255,.8)');
-  t(sessTitle(s),80,230,76,800,'#fff');
   const v=sessVol(s),vs=v>=10000?(v/1000).toFixed(1):v.toLocaleString(),vu=v>=10000?'t':'kg';
-  const dur=fmtT((s.end-s.start)/1000),n=sessSets(s);
-  const prs=prList(s);
-  let y=img?1010:760;
-  if(!img){t('TOTAL VOLUME',80,y,34,700,'rgba(255,255,255,.6)');y+=190;t(vs,80,y,200,800,ACC);
-    c.font=`800 200px ${FONT}`;const vw=c.measureText(vs).width;t(vu,80+vw+16,y,70,800,ACC);y+=110}
-  else{y=1060}
-  // 요약 숫자 3개
-  const cols=[[dur,'시간'],[img?vs+vu:n+'',img?'볼륨':'세트'],[img?n+'':prs.length+'','세트'.length&&img?'세트':'PR']];
-  if(!img){cols[1]=[n+'','세트'];cols[2]=[prs.length+'','PR']}
-  cols.forEach(([val,lab],i)=>{const x=80+i*320;t(val,x,y,76,800,'#fff');t(lab,x,y+52,32,600,'rgba(255,255,255,.6)')});
-  y+=150;
-  // 운동 목록
-  c.fillStyle='rgba(255,255,255,.18)';c.fillRect(80,y,W-160,2);y+=70;
-  s.entries.slice(0,6).forEach(e=>{
-    const m=e.sets.reduce((a,x)=>x.w>a.w||(x.w===a.w&&x.r>a.r)?x:a,{w:-1,r:0});
-    const best=!e.sets.length?'':m.t||e.sets[0].t?Math.max(...e.sets.map(x=>x.t||0))+'초':m.w?`${m.w}kg × ${m.r}`:`맨몸 × ${m.r}`;
-    c.font=`700 44px ${FONT}`;const nm=fitText(c,e.ex,520);
-    t(nm,80,y,44,700,'#fff');
-    if(prs.includes(e.ex)){c.font=`700 44px ${FONT}`;const w=c.measureText(nm).width;t('PR',80+w+16,y,32,800,ACC)}
-    t(`${e.sets.length}세트  ${best}`,W-80,y,38,600,'rgba(255,255,255,.75)','right');y+=76});
-  if(s.entries.length>6)t(`외 ${s.entries.length-6}개 운동`,80,y,34,600,'rgba(255,255,255,.6)');
-  t('🏋️ 오늘도 한 세트',W/2,H-90,36,700,'rgba(255,255,255,.7)','center');
+  const dur=fmtT((s.end-s.start)/1000),n=sessSets(s),title=sessTitle(s);
+  let ts=190;c.font=`800 ${ts}px ${FONT}`;while(c.measureText(title).width>W-160&&ts>70){ts-=6;c.font=`800 ${ts}px ${FONT}`}
+  if(img){ // 사진: 아래쪽에 제목 + 숫자 3개
+    t(dt,80,150,40,600,'rgba(255,255,255,.85)');
+    t(title,80,1380,ts,800,'#fff');
+    [[vs+vu,'볼륨'],[dur,'시간'],[n+'세트','세트']].forEach(([val,lab],i)=>{const x=80+i*330;t(val,x,1600,72,800,ACC);t(lab,x,1660,32,600,'rgba(255,255,255,.65)')});
+  }else{ // 그래픽: 가운데 정렬 큰 제목 + 볼륨 + 시간·세트
+    t(dt,80,150,40,600,'rgba(255,255,255,.7)');
+    t(title,80,760,ts,800,'#fff');
+    t('볼륨',80,990,36,700,'rgba(255,255,255,.6)');
+    c.font=`800 210px ${FONT}`;const vw=c.measureText(vs).width;t(vs,80,1190,210,800,ACC);t(vu,80+vw+18,1190,80,800,ACC);
+    [[dur,'시간'],[n+'',"세트"]].forEach(([val,lab],i)=>{const x=80+i*430;t(lab,x,1370,36,700,'rgba(255,255,255,.6)');t(val,x,1470,110,800,'#fff')})}
+  t('오늘도 한 세트',W/2,H-90,36,700,'rgba(255,255,255,.55)','center');
   return cv}
 async function shareRender(){
   const cv=drawCard(shr.s,shr.img);
