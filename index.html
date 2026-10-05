@@ -265,6 +265,7 @@ const A={
       t=parseInt(box.querySelector('[name=t]')?.value)||0;
     if(exInfo(e.ex).time){if(!t)return;e.sets.push({t})}else{if(!r)return;e.sets.push({w,r})}
     save();haptic(30);render();startRest(S.set.rest)},
+  tset:(i,d)=>{const e=ses().entries[i];e.ts=Math.max(1,Math.min(10,(e.ts||goal().sets)+d));save();render()},
   del:(i,j)=>{ses().entries[i].sets.splice(j,1);save();render()},
   rmex:i=>{if(!confirm('이 운동을 목록에서 뺄까요?'))return;ses().entries.splice(i,1);save();render()},
   pick:()=>{sheet={q:'',g:'전체'};render()},
@@ -382,10 +383,10 @@ function entryCard(e,i){
   const last=e.sets[e.sets.length-1]||sug;
   const field=(l,n,v,step)=>`<label>${l}<input name="${n}" type="number" inputmode="decimal" step="${step||1}" value="${v||''}" placeholder="0"></label>`;
   const tgt=sug.t?sug.t+'초':sug.w?`${sug.w}kg × ${sug.r}`:`맨몸 × ${sug.r}`;
-  const pct=Math.min(100,e.sets.length/g.sets*100);
+  const ts=e.ts||g.sets,pct=Math.min(100,e.sets.length/ts*100);
   return`<div class="card" data-e="${i}">
     <div class="row"><div class="grow"><div class="lab">${exInfo(e.ex).g}</div><div class="mid" data-dbl="${i}">${esc(e.ex)}</div></div>
-    <div class="ring" style="--p:${pct}"><i>${e.sets.length}/${g.sets}</i></div><button class="x" data-a="rmex" data-p="${i}">✕</button></div>
+    <div class="ring" style="--p:${pct}"><i>${e.sets.length}/${ts}</i></div><button class="x" data-a="tset" data-p="${i}|-1">－</button><button class="x" data-a="tset" data-p="${i}|1">＋</button><button class="x" data-a="rmex" data-p="${i}">✕</button></div>
     <div class="tgt">${tgt}</div><div class="small">${esc(sug.note||'')}</div>
     <div style="margin-top:12px">${e.sets.map((s,j)=>`<div class="set"><span class="n">${j+1}세트</span><span class="v">${setTxt(s)}</span><button class="x" data-a="del" data-p="${i}|${j}">✕</button></div>`).join('')}</div>
     <div class="inputs">${time?field('시간(초)','t',last.t):field('무게(kg)','w',last.w,0.5)+field('횟수','r',last.r)}</div>
